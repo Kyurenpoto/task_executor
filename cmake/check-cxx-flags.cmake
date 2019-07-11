@@ -1,0 +1,12 @@
+include (CheckCXXCompilerFlag)
+
+if (MSVC)
+    check_cxx_compiler_flag (/std:c++latest    cxx_last)
+    check_cxx_compiler_flag (/W4               high_warning_level)
+elseif (${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
+    check_cxx_compiler_flag (-std=c++2a        cxx_last)
+    check_cxx_compiler_flag (-Wall             high_warning_level)
+elseif (${CMAKE_CXX_COMPILER_ID} MATCHES GNU)
+    check_cxx_compiler_flag (-std=c++2a        cxx_last)
+    check_cxx_compiler_flag (-Wextra           high_warning_level)
+endif ()
