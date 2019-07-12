@@ -13,6 +13,6 @@ set (CMAKE_CXX_STANDARD_REQUIRED ON)
 enable_testing ()
 
 add_executable (task_executor_tests test.cpp)
-find_package (gtest REQUIRED)
-target_link_libraries (task_executor_tests GTest::GTest GTest::Main)
+find_package(GTest MODULE REQUIRED)
+target_link_libraries (task_executor_tests PRIVATE GTest::GTest GTest::Main)
 add_test (task_executor_tests task_executor_tests)
