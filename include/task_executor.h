@@ -5,33 +5,6 @@
 
 namespace task_executor
 {
-    inline namespace traits_v1
-    {
-        template<class, class>
-        struct is_executor;
-
-        template<class Executor>
-        constexpr bool is_executor_v = is_executor<Executor>::value;
-
-        template<class, class>
-        struct is_executable;
-
-        template<class Executable>
-        constexpr bool is_executable_v = is_executor<Executable>::value;
-
-        template<class, class>
-        struct is_awaiter;
-
-        template<class Awaiter>
-        constexpr bool is_awaiter_v = is_executor<Awaiter>::value;
-
-        template<class, class>
-        struct is_awaitable;
-
-        template<class Awaitable>
-        constexpr bool is_awaitable_v = is_executor<Awaitable>::value;
-    }
-
     inline namespace interface_v1
     {
         template<class...>

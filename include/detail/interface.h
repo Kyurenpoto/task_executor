@@ -17,7 +17,7 @@ namespace task_executor
             static_assert(is_executor_v<Executor> && is_executable_v<Executable>...,
                 "Cannot post: It doesn't satisfy executor traits or executable traits");
 
-            return std::declval<executor_result_t<Executor, Executable>>();;
+            return std::declval<executor_result_t<Executor, Executable>>();
         }
 
         template<class Rep, class Period, class Executor, class... Executable>
@@ -26,7 +26,7 @@ namespace task_executor
             static_assert(is_executor_v<Executor> && is_executable_v<Executable>...,
                 "Cannot post: It doesn't satisfy executor traits or executable traits");
 
-            return std::declval<executor_result_t<Executor, Executable>>();;
+            return std::declval<executor_result_t<Executor, Executable>>();
         }
 
         template<class Clock, class Duration, class Executor, class... Executable>
@@ -35,7 +35,7 @@ namespace task_executor
             static_assert(is_executor_v<Executor> && is_executable_v<Executable>...,
                 "Cannot post: It doesn't satisfy executor traits or executable traits");
 
-            return std::declval<executor_result_t<Executor, Executable>>();;
+            return std::declval<executor_result_t<Executor, Executable>>();
         }
 
         template<class Executor, class... Executable>
@@ -44,7 +44,7 @@ namespace task_executor
             static_assert(is_executor_v<Executor> && is_executable_v<Executable>...,
                 "Cannot dispatch: It doesn't satisfy executor traits or executable traits");
 
-            return std::declval<executor_result_t<Executor, Executable>>();;
+            return std::declval<executor_result_t<Executor, Executable>>();
         }
 
         template<class Rep, class Period, class Executor, class... Executable>
@@ -53,7 +53,7 @@ namespace task_executor
             static_assert(is_executor_v<Executor> && is_executable_v<Executable>...,
                 "Cannot dispatch: It doesn't satisfy executor traits or executable traits");
 
-            return std::declval<executor_result_t<Executor, Executable>>();;
+            return std::declval<executor_result_t<Executor, Executable>>();
         }
 
         template<class Clock, class Duration, class Executor, class... Executable>
@@ -62,7 +62,7 @@ namespace task_executor
             static_assert(is_executor_v<Executor> && is_executable_v<Executable>...,
                 "Cannot dispatch: It doesn't satisfy executor traits or executable traits");
 
-            return std::declval<executor_result_t<Executor, Executable>>();;
+            return std::declval<executor_result_t<Executor, Executable>>();
         }
 
         template<class Executor, class... Executable>
@@ -71,7 +71,7 @@ namespace task_executor
             static_assert(is_executor_v<Executor> && is_executable_v<Executable>...,
                 "Cannot defer: It doesn't satisfy executor traits or executable traits");
 
-            return std::declval<executor_result_t<Executor, Executable>>();;
+            return std::declval<executor_result_t<Executor, Executable>>();
         }
 
         template<class Rep, class Period, class Executor, class... Executable>
@@ -80,7 +80,7 @@ namespace task_executor
             static_assert(is_executor_v<Executor> && is_executable_v<Executable>...,
                 "Cannot defer: It doesn't satisfy executor traits or executable traits");
 
-            return std::declval<executor_result_t<Executor, Executable>>();;
+            return std::declval<executor_result_t<Executor, Executable>>();
         }
 
         template<class Clock, class Duration, class Executor, class... Executable>
@@ -89,7 +89,7 @@ namespace task_executor
             static_assert(is_executor_v<Executor> && is_executable_v<Executable>...,
                 "Cannot defer: It doesn't satisfy executor traits or executable traits");
 
-            return std::declval<executor_result_t<Executor, Executable>>();;
+            return std::declval<executor_result_t<Executor, Executable>>();
         }
 
 
@@ -103,7 +103,7 @@ namespace task_executor
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
                 "Cannot post: It doesn't satisfy awaiter traits or awaitable traits");
 
-            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();;
+            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Rep, class Period, class Awaiter, class... Awaitable>
@@ -112,7 +112,7 @@ namespace task_executor
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
                 "Cannot post: It doesn't satisfy awaiter traits or awaitable traits");
 
-            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();;
+            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Clock, class Duration, class Awaiter, class... Awaitable>
@@ -121,7 +121,7 @@ namespace task_executor
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
                 "Cannot post: It doesn't satisfy awaiter traits or awaitable traits");
 
-            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();;
+            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Awaiter, class... Awaitable>
@@ -130,7 +130,7 @@ namespace task_executor
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
                 "Cannot dispatch: It doesn't satisfy awaiter traits or awaitable traits");
 
-            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();;
+            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Rep, class Period, class Awaiter, class... Awaitable>
@@ -139,7 +139,7 @@ namespace task_executor
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
                 "Cannot dispatch: It doesn't satisfy awaiter traits or awaitable traits");
 
-            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();;
+            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Clock, class Duration, class Awaiter, class... Awaitable>
@@ -148,7 +148,7 @@ namespace task_executor
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
                 "Cannot dispatch: It doesn't satisfy awaiter traits or awaitable traits");
 
-            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();;
+            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Awaiter, class... Awaitable>
@@ -157,7 +157,7 @@ namespace task_executor
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
                 "Cannot defer: It doesn't satisfy awaiter traits or awaitable traits");
 
-            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();;
+            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Rep, class Period, class Awaiter, class... Awaitable>
@@ -166,7 +166,7 @@ namespace task_executor
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
                 "Cannot defer: It doesn't satisfy awaiter traits or awaitable traits");
 
-            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();;
+            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Clock, class Duration, class Awaiter, class... Awaitable>
@@ -175,7 +175,7 @@ namespace task_executor
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
                 "Cannot defer: It doesn't satisfy awaiter traits or awaitable traits");
 
-            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();;
+            return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
     }
 }
