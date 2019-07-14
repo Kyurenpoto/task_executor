@@ -98,82 +98,82 @@ namespace task_executor
         struct awaiter_result_t;
 
         template<class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> post(Awaiter &&, Awaitable && ...)
+        awaiter_result_t<Awaiter, Awaitable...> co_post(Awaiter &&, Awaitable && ...)
         {
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
-                "Cannot post: It doesn't satisfy awaiter traits or awaitable traits");
+                "Cannot co_post: It doesn't satisfy awaiter traits or awaitable traits");
 
             return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Rep, class Period, class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> post(Awaiter &&, const std::chrono::duration<Rep, Period> &, Awaitable && ...)
+        awaiter_result_t<Awaiter, Awaitable...> co_post(Awaiter &&, const std::chrono::duration<Rep, Period> &, Awaitable && ...)
         {
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
-                "Cannot post: It doesn't satisfy awaiter traits or awaitable traits");
+                "Cannot co_post: It doesn't satisfy awaiter traits or awaitable traits");
 
             return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Clock, class Duration, class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> post(Awaiter &&, const std::chrono::time_point<Clock, Duration> &, Awaitable && ...)
+        awaiter_result_t<Awaiter, Awaitable...> co_post(Awaiter &&, const std::chrono::time_point<Clock, Duration> &, Awaitable && ...)
         {
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
-                "Cannot post: It doesn't satisfy awaiter traits or awaitable traits");
+                "Cannot co_post: It doesn't satisfy awaiter traits or awaitable traits");
 
             return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> dispatch(Awaiter &&, Awaitable && ...)
+        awaiter_result_t<Awaiter, Awaitable...> co_dispatch(Awaiter &&, Awaitable && ...)
         {
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
-                "Cannot dispatch: It doesn't satisfy awaiter traits or awaitable traits");
+                "Cannot co_dispatch: It doesn't satisfy awaiter traits or awaitable traits");
 
             return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Rep, class Period, class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> dispatch(Awaiter &&, const std::chrono::duration<Rep, Period> &, Awaitable && ...)
+        awaiter_result_t<Awaiter, Awaitable...> co_dispatch(Awaiter &&, const std::chrono::duration<Rep, Period> &, Awaitable && ...)
         {
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
-                "Cannot dispatch: It doesn't satisfy awaiter traits or awaitable traits");
+                "Cannot co_dispatch: It doesn't satisfy awaiter traits or awaitable traits");
 
             return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Clock, class Duration, class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> dispatch(Awaiter &&, const std::chrono::time_point<Clock, Duration> &, Awaitable && ...)
+        awaiter_result_t<Awaiter, Awaitable...> co_dispatch(Awaiter &&, const std::chrono::time_point<Clock, Duration> &, Awaitable && ...)
         {
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
-                "Cannot dispatch: It doesn't satisfy awaiter traits or awaitable traits");
+                "Cannot co_dispatch: It doesn't satisfy awaiter traits or awaitable traits");
 
             return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> defer(Awaiter &&, Awaitable && ...)
+        awaiter_result_t<Awaiter, Awaitable...> co_defer(Awaiter &&, Awaitable && ...)
         {
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
-                "Cannot defer: It doesn't satisfy awaiter traits or awaitable traits");
+                "Cannot co_defer: It doesn't satisfy awaiter traits or awaitable traits");
 
             return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Rep, class Period, class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> defer(Awaiter &&, const std::chrono::duration<Rep, Period> &, Awaitable && ...)
+        awaiter_result_t<Awaiter, Awaitable...> co_defer(Awaiter &&, const std::chrono::duration<Rep, Period> &, Awaitable && ...)
         {
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
-                "Cannot defer: It doesn't satisfy awaiter traits or awaitable traits");
+                "Cannot co_defer: It doesn't satisfy awaiter traits or awaitable traits");
 
             return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }
 
         template<class Clock, class Duration, class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> defer(Awaiter &&, const std::chrono::time_point<Clock, Duration> &, Awaitable && ...)
+        awaiter_result_t<Awaiter, Awaitable...> co_defer(Awaiter &&, const std::chrono::time_point<Clock, Duration> &, Awaitable && ...)
         {
             static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
-                "Cannot defer: It doesn't satisfy awaiter traits or awaitable traits");
+                "Cannot co_defer: It doesn't satisfy awaiter traits or awaitable traits");
 
             return std::declval<awaiter_result_t<Awaiter, Awaitable>>();
         }

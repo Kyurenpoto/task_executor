@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include <chrono>
-#include <type_traits>
 
 namespace task_executor
 {
@@ -43,31 +42,31 @@ namespace task_executor
         struct awaiter_result_t;
 
         template<class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> post(Awaiter &&, Awaitable && ...);
+        awaiter_result_t<Awaiter, Awaitable...> co_post(Awaiter &&, Awaitable && ...);
 
         template<class Rep, class Period, class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> post(Awaiter &&, const std::chrono::duration<Rep, Period> &, Awaitable && ...);
+        awaiter_result_t<Awaiter, Awaitable...> co_post(Awaiter &&, const std::chrono::duration<Rep, Period> &, Awaitable && ...);
 
         template<class Clock, class Duration, class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> post(Awaiter &&, const std::chrono::time_point<Clock, Duration> &, Awaitable && ...);
+        awaiter_result_t<Awaiter, Awaitable...> co_post(Awaiter &&, const std::chrono::time_point<Clock, Duration> &, Awaitable && ...);
 
         template<class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> dispatch(Awaiter &&, Awaitable && ...);
+        awaiter_result_t<Awaiter, Awaitable...> co_dispatch(Awaiter &&, Awaitable && ...);
 
         template<class Rep, class Period, class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> dispatch(Awaiter &&, const std::chrono::duration<Rep, Period> &, Awaitable && ...);
+        awaiter_result_t<Awaiter, Awaitable...> co_dispatch(Awaiter &&, const std::chrono::duration<Rep, Period> &, Awaitable && ...);
 
         template<class Clock, class Duration, class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> dispatch(Awaiter &&, const std::chrono::time_point<Clock, Duration> &, Awaitable && ...);
+        awaiter_result_t<Awaiter, Awaitable...> co_dispatch(Awaiter &&, const std::chrono::time_point<Clock, Duration> &, Awaitable && ...);
 
         template<class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> defer(Awaiter &&, Awaitable && ...);
+        awaiter_result_t<Awaiter, Awaitable...> co_defer(Awaiter &&, Awaitable && ...);
 
         template<class Rep, class Period, class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> defer(Awaiter &&, const std::chrono::duration<Rep, Period> &, Awaitable && ...);
+        awaiter_result_t<Awaiter, Awaitable...> co_defer(Awaiter &&, const std::chrono::duration<Rep, Period> &, Awaitable && ...);
 
         template<class Clock, class Duration, class Awaiter, class... Awaitable>
-        awaiter_result_t<Awaiter, Awaitable...> defer(Awaiter &&, const std::chrono::time_point<Clock, Duration> &, Awaitable && ...);
+        awaiter_result_t<Awaiter, Awaitable...> co_defer(Awaiter &&, const std::chrono::time_point<Clock, Duration> &, Awaitable && ...);
     }
 
     inline namespace executor_v1
