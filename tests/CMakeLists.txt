@@ -14,5 +14,5 @@ enable_testing ()
 
 add_executable (task_executor_tests test.cpp)
 find_package(GTest MODULE REQUIRED)
-target_link_libraries (task_executor_tests PRIVATE GTest::GTest GTest::Main)
+target_link_libraries (task_executor_tests PRIVATE GTest::GTest GTest::Main task_executor)
 add_test (task_executor_tests task_executor_tests)

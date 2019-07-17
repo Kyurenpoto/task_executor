@@ -17,5 +17,10 @@ set (CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library (task_executor INTERFACE)
 target_include_directories (task_executor INTERFACE include/)
+if(MSVC)
+    add_compile_options(/std:c++latest /W4 /await)
+else()
+    add_compile_options(-std=c++2a -Wall -fcoroutines-ts)
+endif()
 
 add_subdirectory (tests)
