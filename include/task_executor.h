@@ -52,149 +52,140 @@ namespace task_executor
         template<class Executor, class... Executable>
         execution_result_t<executable_continuation_wrap_t<
             Executor, executable_continuation_t<Executable...>>>
-            post(Executor &&, Executable &&...);
-    
-        template<class Duration, class Executor, class... Executable>
-        execution_result_t<executable_continuation_wrap_t<
-            Executor, executable_continuation_t<Executable...>>>
-            post_after(Executor &&, Duration &&, Executable &&...);
-    
-        template<class TimePoint, class Executor, class... Executable>
-        execution_result_t<executable_continuation_wrap_t<
-            Executor, executable_continuation_t<Executable...>>>
-            post_at(Executor &&, TimePoint &&, Executable &&...);
-    
-        template<class Executor, class... Executable>
-        execution_result_t<executable_continuation_wrap_t<
-            Executor, executable_continuation_t<Executable...>>>
-            dispatch(Executor &&, Executable &&...);
-    
-        template<class Duration, class Executor, class... Executable>
-        execution_result_t<executable_continuation_wrap_t<
-            Executor, executable_continuation_t<Executable...>>>
-            dispatch_after(Executor &&, Duration &&, Executable &&...);
-    
-        template<class TimePoint, class Executor, class... Executable>
-        execution_result_t<executable_continuation_wrap_t<
-            Executor, executable_continuation_t<Executable...>>>
-            dispatch_at(Executor &&, TimePoint &&, Executable &&...);
-    
-        template<class Executor, class... Executable>
-        execution_result_t<executable_continuation_wrap_t<
-            Executor, executable_continuation_t<Executable...>>>
-            defer(Executor &&, Executable &&...);
-    
-        template<class Duration, class Executor, class... Executable>
-        execution_result_t<executable_continuation_wrap_t<
-            Executor, executable_continuation_t<Executable...>>>
-            defer_after(Executor &&, Duration &&, Executable &&...);
-    
-        template<class TimePoint, class Executor, class... Executable>
-        execution_result_t<executable_continuation_wrap_t<
-            Executor, executable_continuation_t<Executable...>>>
-            defer_at(Executor &&, TimePoint &&, Executable &&...);
-    }
-}
+            post(Executor &&, Executable && ...);
 
-namespace task_executor
-{
-    inline namespace interface_v1
-    {
-        template<class Awaiter, class... Awaitable>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, awaitable_continuation_t<Awaitable...>>>
-            co_post(Awaiter &&, Awaitable &&...);
-    
-        template<class Duration, class Awaiter, class... Awaitable>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, awaitable_continuation_t<Awaitable...>>>
-            co_post_after(Awaiter &&, Duration &&, Awaitable &&...);
-    
-        template<class TimePoint, class Awaiter, class... Awaitable>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, awaitable_continuation_t<Awaitable...>>>
-            co_post_at(Awaiter &&, TimePoint &&, Awaitable &&...);
-    
-        template<class Awaiter, class... Awaitable>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, awaitable_continuation_t<Awaitable...>>>
-            co_dispatch(Awaiter &&, Awaitable &&...);
-    
-        template<class Duration, class Awaiter, class... Awaitable>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, awaitable_continuation_t<Awaitable...>>>
-            co_dispatch_after(Awaiter &&, Duration &&, Awaitable &&...);
-    
-        template<class TimePoint, class Awaiter, class... Awaitable>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, awaitable_continuation_t<Awaitable...>>>
-            co_dispatch_at(Awaiter &&, TimePoint &&, Awaitable &&...);
-    
-        template<class Awaiter, class... Awaitable>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, awaitable_continuation_t<Awaitable...>>>
-            co_defer(Awaiter &&, Awaitable &&...);
-    
-        template<class Duration, class Awaiter, class... Awaitable>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, awaitable_continuation_t<Awaitable...>>>
-            co_defer_after(Awaiter &&, Duration &&, Awaitable &&...);
-    
-        template<class TimePoint, class Awaiter, class... Awaitable>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, awaitable_continuation_t<Awaitable...>>>
-            co_defer_at(Awaiter &&, TimePoint &&, Awaitable &&...);
-    }
-}
-
-namespace task_executor
-{
-    inline namespace interface_v1
-    {
         template<class Executor, class ExecutableContinuation>
         execution_result_t<executable_continuation_wrap_t<
             Executor, ExecutableContinuation>>
             post(Executor &&, ExecutableContinuation &&);
-    
-        template<class Duration, class Executor, class ExecutableContinuation>
+
+        template<class... WrapedExecutableContinuation>
+        execution_result_t<WrapedExecutableContinuation...>
+            post(WrapedExecutableContinuation && ...);
+
+        template<class Executor, class... Executable>
         execution_result_t<executable_continuation_wrap_t<
-            Executor, ExecutableContinuation>>
-            post_after(Executor &&, Duration &&, ExecutableContinuation &&);
-    
-        template<class TimePoint, class Executor, class ExecutableContinuation>
-        execution_result_t<executable_continuation_wrap_t<
-            Executor, ExecutableContinuation>>
-            post_at(Executor &&, TimePoint &&, ExecutableContinuation &&);
-    
+            Executor, executable_continuation_t<Executable...>>>
+            dispatch(Executor &&, Executable && ...);
+
         template<class Executor, class ExecutableContinuation>
         execution_result_t<executable_continuation_wrap_t<
             Executor, ExecutableContinuation>>
             dispatch(Executor &&, ExecutableContinuation &&);
-    
-        template<class Duration, class Executor, class ExecutableContinuation>
+
+        template<class... WrapedExecutableContinuation>
+        execution_result_t<WrapedExecutableContinuation...>
+            dispatch(WrapedExecutableContinuation && ...);
+
+        template<class Executor, class... Executable>
         execution_result_t<executable_continuation_wrap_t<
-            Executor, ExecutableContinuation>>
-            dispatch_after(Executor &&, Duration &&, ExecutableContinuation &&);
-    
-        template<class TimePoint, class Executor, class ExecutableContinuation>
-        execution_result_t<executable_continuation_wrap_t<
-            Executor, ExecutableContinuation>>
-            dispatch_at(Executor &&, TimePoint &&, ExecutableContinuation &&);
-    
+            Executor, executable_continuation_t<Executable...>>>
+            defer(Executor &&, Executable && ...);
+
         template<class Executor, class ExecutableContinuation>
         execution_result_t<executable_continuation_wrap_t<
             Executor, ExecutableContinuation>>
             defer(Executor &&, ExecutableContinuation &&);
-    
+
+        template<class... WrapedExecutableContinuation>
+        execution_result_t<WrapedExecutableContinuation...>
+            defer(WrapedExecutableContinuation && ...);
+    }
+}
+
+namespace task_executor
+{
+    inline namespace interface_v1
+    {
+        template<class Duration, class Executor, class... Executable>
+        execution_result_t<executable_continuation_wrap_t<
+            Executor, executable_continuation_t<Executable...>>>
+            post_after(Executor &&, Duration &&, Executable && ...);
+
+        template<class Duration, class Executor, class ExecutableContinuation>
+        execution_result_t<executable_continuation_wrap_t<
+            Executor, ExecutableContinuation>>
+            post_after(Executor &&, Duration &&, ExecutableContinuation &&);
+
+        template<class Duration, class... WrapedExecutableContinuation>
+        execution_result_t<WrapedExecutableContinuation...>
+            post_after(Duration &&, WrapedExecutableContinuation && ...);
+
+        template<class Duration, class Executor, class... Executable>
+        execution_result_t<executable_continuation_wrap_t<
+            Executor, executable_continuation_t<Executable...>>>
+            dispatch_after(Executor &&, Duration &&, Executable && ...);
+
+        template<class Duration, class Executor, class ExecutableContinuation>
+        execution_result_t<executable_continuation_wrap_t<
+            Executor, ExecutableContinuation>>
+            dispatch_after(Executor &&, Duration &&, ExecutableContinuation &&);
+
+        template<class Duration, class... WrapedExecutableContinuation>
+        execution_result_t<WrapedExecutableContinuation...>
+            dispatch_after(Duration &&, WrapedExecutableContinuation && ...);
+
+        template<class Duration, class Executor, class... Executable>
+        execution_result_t<executable_continuation_wrap_t<
+            Executor, executable_continuation_t<Executable...>>>
+            defer_after(Executor &&, Duration &&, Executable && ...);
+
         template<class Duration, class Executor, class ExecutableContinuation>
         execution_result_t<executable_continuation_wrap_t<
             Executor, ExecutableContinuation>>
             defer_after(Executor &&, Duration &&, ExecutableContinuation &&);
+
+        template<class Duration, class... WrapedExecutableContinuation>
+        execution_result_t<WrapedExecutableContinuation...>
+            defer_after(Duration &&, WrapedExecutableContinuation && ...);
+    }
+}
+
+namespace task_executor
+{
+    inline namespace interface_v1
+    {
+        template<class TimePoint, class Executor, class... Executable>
+        execution_result_t<executable_continuation_wrap_t<
+            Executor, executable_continuation_t<Executable...>>>
+            post_at(Executor &&, TimePoint &&, Executable && ...);
+
+        template<class TimePoint, class Executor, class ExecutableContinuation>
+        execution_result_t<executable_continuation_wrap_t<
+            Executor, ExecutableContinuation>>
+            post_at(Executor &&, TimePoint &&, ExecutableContinuation &&);
+
+        template<class TimePoint, class... WrapedExecutableContinuation>
+        execution_result_t<WrapedExecutableContinuation...>
+            post_at(TimePoint &&, WrapedExecutableContinuation && ...);
     
+        template<class TimePoint, class Executor, class... Executable>
+        execution_result_t<executable_continuation_wrap_t<
+            Executor, executable_continuation_t<Executable...>>>
+            dispatch_at(Executor &&, TimePoint &&, Executable && ...);
+
+        template<class TimePoint, class Executor, class ExecutableContinuation>
+        execution_result_t<executable_continuation_wrap_t<
+            Executor, ExecutableContinuation>>
+            dispatch_at(Executor &&, TimePoint &&, ExecutableContinuation &&);
+
+        template<class TimePoint, class... WrapedExecutableContinuation>
+        execution_result_t<WrapedExecutableContinuation...>
+            dispatch_at(TimePoint &&, WrapedExecutableContinuation && ...);
+    
+        template<class TimePoint, class Executor, class... Executable>
+        execution_result_t<executable_continuation_wrap_t<
+            Executor, executable_continuation_t<Executable...>>>
+            defer_at(Executor &&, TimePoint &&, Executable && ...);
+
         template<class TimePoint, class Executor, class ExecutableContinuation>
         execution_result_t<executable_continuation_wrap_t<
             Executor, ExecutableContinuation>>
             defer_at(Executor &&, TimePoint &&, ExecutableContinuation &&);
+
+        template<class TimePoint, class... WrapedExecutableContinuation>
+        execution_result_t<WrapedExecutableContinuation...>
+            defer_at(TimePoint &&, WrapedExecutableContinuation && ...);
     }
 }
 
@@ -202,134 +193,143 @@ namespace task_executor
 {
     inline namespace interface_v1
     {
+        template<class Awaiter, class... Awaitable>
+        await_result_t<awaitable_continuation_wrap_t<
+            Awaiter, awaitable_continuation_t<Awaitable...>>>
+            co_post(Awaiter &&, Awaitable && ...);
+
         template<class Awaiter, class AwaitableContinuation>
         await_result_t<awaitable_continuation_wrap_t<
             Awaiter, AwaitableContinuation>>
             co_post(Awaiter &&, AwaitableContinuation &&);
-    
-        template<class Duration, class Awaiter, class AwaitableContinuation>
+
+        template<class... WrapedAwaitableContinuation>
+        await_result_t<WrapedAwaitableContinuation...>
+            co_post(WrapedAwaitableContinuation && ...);
+
+        template<class Awaiter, class... Awaitable>
         await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, AwaitableContinuation>>
-            co_post_after(Awaiter &&, Duration &&, AwaitableContinuation &&);
-    
-        template<class TimePoint, class Awaiter, class AwaitableContinuation>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, AwaitableContinuation>>
-            co_post_at(Awaiter &&, TimePoint &&, AwaitableContinuation &&);
-    
+            Awaiter, awaitable_continuation_t<Awaitable...>>>
+            co_dispatch(Awaiter &&, Awaitable && ...);
+
         template<class Awaiter, class AwaitableContinuation>
         await_result_t<awaitable_continuation_wrap_t<
             Awaiter, AwaitableContinuation>>
             co_dispatch(Awaiter &&, AwaitableContinuation &&);
-    
-        template<class Duration, class Awaiter, class AwaitableContinuation>
+
+        template<class... WrapedAwaitableContinuation>
+        await_result_t<WrapedAwaitableContinuation...>
+            co_dispatch(WrapedAwaitableContinuation && ...);
+
+        template<class Awaiter, class... Awaitable>
         await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, AwaitableContinuation>>
-            co_dispatch_after(Awaiter &&, Duration &&, AwaitableContinuation &&);
-    
-        template<class TimePoint, class Awaiter, class AwaitableContinuation>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, AwaitableContinuation>>
-            co_dispatch_at(Awaiter &&, TimePoint &&, AwaitableContinuation &&);
-    
+            Awaiter, awaitable_continuation_t<Awaitable...>>>
+            co_defer(Awaiter &&, Awaitable && ...);
+
         template<class Awaiter, class AwaitableContinuation>
         await_result_t<awaitable_continuation_wrap_t<
             Awaiter, AwaitableContinuation>>
             co_defer(Awaiter &&, AwaitableContinuation &&);
-    
+
+        template<class... WrapedAwaitableContinuation>
+        await_result_t<WrapedAwaitableContinuation...>
+            co_defer(WrapedAwaitableContinuation && ...);
+    }
+}
+
+namespace task_executor
+{
+    inline namespace interface_v1
+    {
+        template<class Duration, class Awaiter, class... Awaitable>
+        await_result_t<awaitable_continuation_wrap_t<
+            Awaiter, awaitable_continuation_t<Awaitable...>>>
+            co_post_after(Awaiter &&, Duration &&, Awaitable && ...);
+
+        template<class Duration, class Awaiter, class AwaitableContinuation>
+        await_result_t<awaitable_continuation_wrap_t<
+            Awaiter, AwaitableContinuation>>
+            co_post_after(Awaiter &&, Duration &&, AwaitableContinuation &&);
+
+        template<class Duration, class... WrapedAwaitableContinuation>
+        await_result_t<WrapedAwaitableContinuation...>
+            co_post_after(Duration &&, WrapedAwaitableContinuation && ...);
+
+        template<class Duration, class Awaiter, class... Awaitable>
+        await_result_t<awaitable_continuation_wrap_t<
+            Awaiter, awaitable_continuation_t<Awaitable...>>>
+            co_dispatch_after(Awaiter &&, Duration &&, Awaitable && ...);
+
+        template<class Duration, class Awaiter, class AwaitableContinuation>
+        await_result_t<awaitable_continuation_wrap_t<
+            Awaiter, AwaitableContinuation>>
+            co_dispatch_after(Awaiter &&, Duration &&, AwaitableContinuation &&);
+
+        template<class Duration, class... WrapedAwaitableContinuation>
+        await_result_t<WrapedAwaitableContinuation...>
+            co_dispatch_after(Duration &&, WrapedAwaitableContinuation && ...);
+
+        template<class Duration, class Awaiter, class... Awaitable>
+        await_result_t<awaitable_continuation_wrap_t<
+            Awaiter, awaitable_continuation_t<Awaitable...>>>
+            co_defer_after(Awaiter &&, Duration &&, Awaitable && ...);
+
         template<class Duration, class Awaiter, class AwaitableContinuation>
         await_result_t<awaitable_continuation_wrap_t<
             Awaiter, AwaitableContinuation>>
             co_defer_after(Awaiter &&, Duration &&, AwaitableContinuation &&);
+
+        template<class Duration, class... WrapedAwaitableContinuation>
+        await_result_t<WrapedAwaitableContinuation...>
+            co_defer_after(Duration &&, WrapedAwaitableContinuation && ...);
+    }
+}
+
+namespace task_executor
+{
+    inline namespace interface_v1
+    {
+        template<class TimePoint, class Awaiter, class... Awaitable>
+        await_result_t<awaitable_continuation_wrap_t<
+            Awaiter, awaitable_continuation_t<Awaitable...>>>
+            co_post_at(Awaiter &&, TimePoint &&, Awaitable && ...);
+
+        template<class TimePoint, class Awaiter, class AwaitableContinuation>
+        await_result_t<awaitable_continuation_wrap_t<
+            Awaiter, AwaitableContinuation>>
+            co_post_at(Awaiter &&, TimePoint &&, AwaitableContinuation &&);
+
+        template<class TimePoint, class... WrapedAwaitableContinuation>
+        await_result_t<WrapedAwaitableContinuation...>
+            co_post_at(TimePoint &&, WrapedAwaitableContinuation && ...);
     
+        template<class TimePoint, class Awaiter, class... Awaitable>
+        await_result_t<awaitable_continuation_wrap_t<
+            Awaiter, awaitable_continuation_t<Awaitable...>>>
+            co_dispatch_at(Awaiter &&, TimePoint &&, Awaitable && ...);
+
+        template<class TimePoint, class Awaiter, class AwaitableContinuation>
+        await_result_t<awaitable_continuation_wrap_t<
+            Awaiter, AwaitableContinuation>>
+            co_dispatch_at(Awaiter &&, TimePoint &&, AwaitableContinuation &&);
+
+        template<class TimePoint, class... WrapedAwaitableContinuation>
+        await_result_t<WrapedAwaitableContinuation...>
+            co_dispatch_at(TimePoint &&, WrapedAwaitableContinuation && ...);
+    
+        template<class TimePoint, class Awaiter, class... Awaitable>
+        await_result_t<awaitable_continuation_wrap_t<
+            Awaiter, awaitable_continuation_t<Awaitable...>>>
+            co_defer_at(Awaiter &&, TimePoint &&, Awaitable && ...);
+
         template<class TimePoint, class Awaiter, class AwaitableContinuation>
         await_result_t<awaitable_continuation_wrap_t<
             Awaiter, AwaitableContinuation>>
             co_defer_at(Awaiter &&, TimePoint &&, AwaitableContinuation &&);
-    }
-}
 
-namespace task_executor
-{
-    inline namespace interface_v1
-    {
-        template<class... WrapedExecutableContinuation>
-        execution_result_t<WrapedExecutableContinuation...>
-            post(WrapedExecutableContinuation &&...);
-    
-        template<class Duration, class... WrapedExecutableContinuation>
-        execution_result_t<WrapedExecutableContinuation...>
-            post_after(Duration &&, WrapedExecutableContinuation &&...);
-    
-        template<class TimePoint, class... WrapedExecutableContinuation>
-        execution_result_t<WrapedExecutableContinuation...>
-            post_at(TimePoint &&, WrapedExecutableContinuation &&...);
-    
-        template<class... WrapedExecutableContinuation>
-        execution_result_t<WrapedExecutableContinuation...>
-            dispatch(WrapedExecutableContinuation &&...);
-    
-        template<class Duration, class... WrapedExecutableContinuation>
-        execution_result_t<WrapedExecutableContinuation...>
-            dispatch_after(Duration &&, WrapedExecutableContinuation &&...);
-    
-        template<class TimePoint, class... WrapedExecutableContinuation>
-        execution_result_t<WrapedExecutableContinuation...>
-            dispatch_at(TimePoint &&, WrapedExecutableContinuation &&...);
-    
-        template<class... WrapedExecutableContinuation>
-        execution_result_t<WrapedExecutableContinuation...>
-            defer(WrapedExecutableContinuation &&...);
-    
-        template<class Duration, class... WrapedExecutableContinuation>
-        execution_result_t<WrapedExecutableContinuation...>
-            defer_after(Duration &&, WrapedExecutableContinuation &&...);
-    
-        template<class TimePoint, class... WrapedExecutableContinuation>
-        execution_result_t<WrapedExecutableContinuation...>
-            defer_at(TimePoint &&, WrapedExecutableContinuation &&...);
-    }
-}
-
-namespace task_executor
-{
-    inline namespace interface_v1
-    {
-        template<class... WrapedAwaitableContinuation>
-        await_result_t<WrapedAwaitableContinuation...>
-            co_post(WrapedAwaitableContinuation &&...);
-    
-        template<class Duration, class... WrapedAwaitableContinuation>
-        await_result_t<WrapedAwaitableContinuation...>
-            co_post_after(Duration &&, WrapedAwaitableContinuation &&...);
-    
         template<class TimePoint, class... WrapedAwaitableContinuation>
         await_result_t<WrapedAwaitableContinuation...>
-            co_post_at(TimePoint &&, WrapedAwaitableContinuation &&...);
-    
-        template<class... WrapedAwaitableContinuation>
-        await_result_t<WrapedAwaitableContinuation...>
-            co_dispatch(WrapedAwaitableContinuation &&...);
-    
-        template<class Duration, class... WrapedAwaitableContinuation>
-        await_result_t<WrapedAwaitableContinuation...>
-            co_dispatch_after(Duration &&, WrapedAwaitableContinuation &&...);
-    
-        template<class TimePoint, class... WrapedAwaitableContinuation>
-        await_result_t<WrapedAwaitableContinuation...>
-            co_dispatch_at(TimePoint &&, WrapedAwaitableContinuation &&...);
-    
-        template<class... WrapedAwaitableContinuation>
-        await_result_t<WrapedAwaitableContinuation...>
-            co_defer(WrapedAwaitableContinuation &&...);
-    
-        template<class Duration, class... WrapedAwaitableContinuation>
-        await_result_t<WrapedAwaitableContinuation...>
-            co_defer_after(Duration &&, WrapedAwaitableContinuation &&...);
-    
-        template<class TimePoint, class... WrapedAwaitableContinuation>
-        await_result_t<WrapedAwaitableContinuation...>
-            co_defer_at(TimePoint &&, WrapedAwaitableContinuation &&...);
+            co_defer_at(TimePoint &&, WrapedAwaitableContinuation && ...);
     }
 }
 
