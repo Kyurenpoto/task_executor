@@ -8,6 +8,21 @@ namespace task_executor
     inline namespace traits_v1
     {
         template<class T>
+        struct function_return
+        {
+            template<class R, class... A>
+            static R ret(R(*)(A...));
+
+            template<class C, class R, class... A>
+            static R ret(R(C::*)(A...));
+
+            using type = decltype(ret(std::declval<T>()));
+        };
+
+        template<class T>
+        using function_return_t = typename function_return<T>::type;
+
+        template<class T>
         struct is_executor
         {
             template<class, class>
@@ -99,17 +114,20 @@ namespace task_executor
         struct is_awaitable
         {
             template<class R, class... A>
-            R ret(R(*)(A...));
+            static R ret(R(*)(A...));
 
             template<class C, class R, class... A>
-            R ret(R(C::*)(A...));
+            static R ret(R(C::*)(A...));
 
             template<class U>
-            static std::true_type test(typename decltype(ret(std::declval<U>()))::promise_type *);
+            static std::true_type test(typename
+                std::experimental::coroutine_traits<
+                function_return_t<U>>::promise_type *);
             template<class U>
             static std::false_type test(...);
 
             static constexpr bool value =
+                std::is_function_v<std::remove_pointer_t<T>> &&
                 std::is_same_v<std::true_type, decltype(test<T>(nullptr))>;
         };
 
