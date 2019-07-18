@@ -56,7 +56,7 @@ namespace task_executor
         template<class... T>
         auto dispatch(T && ... args)
         {
-            return op_post::type<T...>::invoke(args...);
+            return op_dispatch::type<T...>::invoke(args...);
         }
     }
 }

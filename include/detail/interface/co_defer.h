@@ -6,39 +6,57 @@ namespace task_executor
 {
     inline namespace interface_v1
     {
-        template<class Awaiter, class... Awaitable>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, awaitable_continuation_t<Awaitable...>>>
-            co_defer(Awaiter&&, Awaitable && ...)
+        struct op_co_defer : op_await
         {
-            static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
-                "It doesn't satisfy awaiter traits or awaitable traits");
+            struct op_raw
+            {
+                template<class Awaiter, class... Awaitable>
+                static await_result_t<awaitable_continuation_wrap_t<
+                    Awaiter, awaitable_continuation_t<Awaitable...>>>
+                    invoke(Awaiter &&, Awaitable && ...)
+                {
+                    static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
+                        "It doesn't satisfy awaiter traits or awaitable traits");
 
-            co_yield std::declval<await_result_t<awaitable_continuation_wrap_t<
-                Awaiter, awaitable_continuation_t<Awaitable...>>>>();
-        }
+                    return std::declval<await_result_t<awaitable_continuation_wrap_t<
+                        Awaiter, awaitable_continuation_t<Awaitable...>>>>();
+                }
+            };
 
-        template<class Awaiter, class AwaitableContinuation>
-        await_result_t<awaitable_continuation_wrap_t<
-            Awaiter, AwaitableContinuation>>
-            co_defer(Awaiter&&, AwaitableContinuation&&)
+            struct op_continuation
+            {
+                template<class Awaiter, class AwaitableContinuation>
+                static await_result_t<awaitable_continuation_wrap_t<
+                    Awaiter, AwaitableContinuation>>
+                    invoke(Awaiter &&, AwaitableContinuation &&)
+                {
+                    static_assert(is_awaiter_v<Awaiter> &&
+                        is_awaitable_continuation_v<AwaitableContinuation>,
+                        "It doesn't satisfy awaiter traits or awaitable continuation traits");
+
+                    return std::declval<await_result_t<awaitable_continuation_wrap_t<
+                        Awaiter, AwaitableContinuation>>>();
+                }
+            };
+
+            struct op_wrap
+            {
+                template<class... WrapedAwaitableContinuation>
+                static await_result_t<WrapedAwaitableContinuation...>
+                    invoke(WrapedAwaitableContinuation && ...)
+                {
+                    static_assert(is_wraped_awaitable_continuation_v<WrapedAwaitableContinuation>...,
+                        "It doesn't satisfy wraped awaitable continuation traits");
+
+                    return std::declval<await_result_t<WrapedAwaitableContinuation...>>();
+                }
+            };
+        };
+
+        template<class... T>
+        auto co_defer(T && ... args)
         {
-            static_assert(is_awaiter_v<Awaiter> &&
-                is_awaitable_continuation_v<AwaitableContinuation>,
-                "It doesn't satisfy awaiter traits or awaitable continuation traits");
-
-            co_yield std::declval<await_result_t<awaitable_continuation_wrap_t<
-                Awaiter, AwaitableContinuation>>>();
-        }
-
-        template<class... WrapedAwaitableContinuation>
-        await_result_t<WrapedAwaitableContinuation...>
-            co_defer(WrapedAwaitableContinuation&& ...)
-        {
-            static_assert(is_wraped_awaitable_continuation_v<WrapedAwaitableContinuation>...,
-                "It doesn't satisfy wraped awaitable continuation traits");
-
-            return std::declval<await_result_t<WrapedAwaitableContinuation...>>();
+            return op_co_defer::type<T...>::invoke(args...);
         }
     }
 }
