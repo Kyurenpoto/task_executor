@@ -13,7 +13,7 @@ namespace task_executor
                 template<class Duration, class Awaiter, class... Awaitable>
                 static await_result_t<awaitable_continuation_wrap_t<
                     Awaiter, awaitable_continuation_t<Awaitable...>>>
-                    invoke(Awaiter &&, Duration &&, Awaitable && ...)
+                    invoke(Duration &&, Awaiter &&, Awaitable && ...)
                 {
                     static_assert(is_awaiter_v<Awaiter> && is_awaitable_v<Awaitable>...,
                         "It doesn't satisfy awaiter traits or awaitable traits");
@@ -28,7 +28,7 @@ namespace task_executor
                 template<class Duration, class Awaiter, class AwaitableContinuation>
                 static await_result_t<awaitable_continuation_wrap_t<
                     Awaiter, AwaitableContinuation>>
-                    invoke(Awaiter &&, Duration &&, AwaitableContinuation &&)
+                    invoke(Duration &&, Awaiter &&, AwaitableContinuation &&)
                 {
                     static_assert(is_awaiter_v<Awaiter> &&
                         is_awaitable_continuation_v<AwaitableContinuation>,
@@ -53,10 +53,10 @@ namespace task_executor
             };
         };
 
-        template<class... T>
-        auto co_post_after(T && ... args)
+        template<class T, class... U>
+        auto co_post_after(T && arg, U && ... args)
         {
-            return op_co_post_after::type<T...>::invoke(args...);
+            return op_co_post_after::type<U...>::invoke(arg, args...);
         }
     }
 }

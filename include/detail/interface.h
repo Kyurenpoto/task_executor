@@ -30,11 +30,11 @@ namespace task_executor
                 is_wraped_executable_continuation_v<T0> &&
                 is_wraped_executable_continuation_v<T>...;
 
-            template<class T0, class... T>
-            using type = std::conditional_t<
-                is_op_raw<T0, T...>, op_raw,
-                std::conditional_t<is_op_continuation<T0, T...>, op_continuation,
-                std::conditional_t<is_op_wrap<T0, T...>, op_wrap, void>>>;
+            template<class... T>
+            using type =
+                std::conditional_t<is_op_raw<T...>, op_raw,
+                std::conditional_t<is_op_continuation<T...>, op_continuation,
+                std::conditional_t<is_op_wrap<T...>, op_wrap, void>>>;
         };
 
         struct op_await : op_base
@@ -56,11 +56,11 @@ namespace task_executor
                 is_wraped_awaitable_continuation_v<T0> &&
                 is_wraped_awaitable_continuation_v<T>...;
 
-            template<class T0, class... T>
-            using type = std::conditional_t<
-                is_op_raw<T0, T...>, op_raw,
-                std::conditional_t<is_op_continuation<T0, T...>, op_continuation,
-                std::conditional_t<is_op_wrap<T0, T...>, op_wrap, void>>>;
+            template<class... T>
+            using type =
+                std::conditional_t<is_op_raw<T...>, op_raw,
+                std::conditional_t<is_op_continuation<T...>, op_continuation,
+                std::conditional_t<is_op_wrap<T...>, op_wrap, void>>>;
         };
     }
 }

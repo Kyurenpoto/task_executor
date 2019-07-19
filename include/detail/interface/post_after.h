@@ -13,7 +13,7 @@ namespace task_executor
                 template<class Duration, class Executor, class... Executable>
                 static execution_result_t<executable_continuation_wrap_t<
                     Executor, executable_continuation_t<Executable...>>>
-                    invoke(Executor &&, Duration &&, Executable && ...)
+                    invoke(Duration &&, Executor &&, Executable && ...)
                 {
                     static_assert(is_executor_v<Executor> && is_executable_v<Executable>...,
                         "It doesn't satisfy executor traits or executable traits");
@@ -28,7 +28,7 @@ namespace task_executor
                 template<class Duration, class Executor, class ExecutableContinuation>
                 static execution_result_t<executable_continuation_wrap_t<
                     Executor, ExecutableContinuation>>
-                    invoke(Executor &&, Duration &&, ExecutableContinuation &&)
+                    invoke(Duration &&, Executor &&, ExecutableContinuation &&)
                 {
                     static_assert(is_executor_v<Executor> &&
                         is_executable_continuation_v<ExecutableContinuation>,
@@ -53,10 +53,10 @@ namespace task_executor
             };
         };
 
-        template<class... T>
-        auto post_after(T && ... args)
+        template<class T, class... U>
+        auto post_after(T && arg, U && ... args)
         {
-            return op_post_after::type<T...>::invoke(args...);
+            return op_post_after::type<U...>::invoke(arg, args...);
         }
     }
 }
