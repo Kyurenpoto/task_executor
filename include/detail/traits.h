@@ -8,19 +8,53 @@ namespace task_executor
     inline namespace traits_v1
     {
         template<class T>
-        struct function_return
+        struct function_traits_impl;
+
+        template<class R, class... A>
+        struct function_traits_impl<R(A...)>
         {
-            template<class R, class... A>
-            static R ret(R(*)(A...));
-
-            template<class C, class R, class... A>
-            static R ret(R(C::*)(A...));
-
-            using type = decltype(ret(std::declval<T>()));
+            using return_type = R;
+            using args_type = std::tuple<A...>;
         };
 
+        template<class R, class... A>
+        function_traits_impl<R(A...)> function_traits_helper(R(*)(A...))
+        {
+            return std::declval<function_traits_impl<R(A...)>>();
+        }
+
+        template<class T, class R, class... A>
+        function_traits_impl<R(A...)> function_traits_helper(R(T::*)(A...))
+        {
+            return std::declval<function_traits_impl<R(A...)>>();
+        }
+
+        template<class T, class R, class... A>
+        function_traits_impl<R(A...)> function_traits_helper(R(T::*)(A...) const)
+        {
+            return std::declval<function_traits_impl<R(A...)>>();
+        }
+
+        template<class T, class R, class... A>
+        function_traits_impl<R(A...)> function_traits_helper(R(T::*)(A...) volatile)
+        {
+            return std::declval<function_traits_impl<R(A...)>>();
+        }
+
+        template<class T, class R, class... A>
+        function_traits_impl<R(A...)> function_traits_helper(R(T::*)(A...) const volatile)
+        {
+            return std::declval<function_traits_impl<R(A...)>>();
+        }
+
         template<class T>
-        using function_return_t = typename function_return<T>::type;
+        auto function_traits_helper(T &&)
+        {
+            return function_traits_helper(&T::operator());
+        }
+
+        template<class T>
+        using function_traits = decltype(function_traits_helper(std::declval<T>()));
 
         template<class T>
         struct is_executor
@@ -113,22 +147,15 @@ namespace task_executor
         template<class T>
         struct is_awaitable
         {
-            template<class R, class... A>
-            static R ret(R(*)(A...));
+            using return_type = typename function_traits<T>::return_type;
 
-            template<class C, class R, class... A>
-            static R ret(R(C::*)(A...));
+            using promise_type = typename
+                std::experimental::coroutine_traits<return_type>::promise_type;
 
-            template<class U>
-            static std::true_type test(typename
-                std::experimental::coroutine_traits<
-                function_return_t<U>>::promise_type *);
-            template<class U>
+            static std::true_type test(promise_type *);
             static std::false_type test(...);
 
-            static constexpr bool value =
-                std::is_function_v<std::remove_pointer_t<T>> &&
-                std::is_same_v<std::true_type, decltype(test<T>(nullptr))>;
+            static constexpr bool value = std::is_same_v<std::true_type, decltype(test(nullptr))>;
         };
 
         template<class T>
