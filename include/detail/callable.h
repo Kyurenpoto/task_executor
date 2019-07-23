@@ -24,7 +24,7 @@ namespace task_executor
         {
             virtual ~callable() = default;
 
-            callable(R(*func)(A...)) :
+            explicit callable(R(*func)(A...)) :
                 func{ func }
             {}
 
@@ -41,14 +41,17 @@ namespace task_executor
         {
             virtual ~callable() = default;
 
-            callable(C * obj, R(C::*memFunc)(A...)) :
+            explicit callable(C * obj, R(C::*memFunc)(A...)) :
                 obj{ obj },
                 memFunc{ memFunc }
             {}
 
             R operator() (A && ... args)
             {
-                return (obj->*memFunc)(std::forward(args)...);
+                if (obj)
+                    return (obj->*memFunc)(std::forward(args)...);
+                else
+                    return std::declval<R>();
             }
 
             C * obj = nullptr;
@@ -60,11 +63,20 @@ namespace task_executor
         {
             virtual ~callable() = default;
 
-            callable(C*, R(C::*)(A...) const);
+            explicit callable(C * const obj, R(C::*memFunc)(A...) const) :
+                obj{ obj },
+                memFunc{ memFunc }
+            {}
 
-            R operator() (A && ...);
+            R operator() (A && ... args)
+            {
+                if (obj)
+                    return (obj->*memFunc)(std::forward(args)...);
+                else
+                    return std::declval<R>();
+            }
 
-            C * obj;
+            C * const obj;
             R(C::*memFunc)(A...) const;
         };
 
@@ -73,11 +85,20 @@ namespace task_executor
         {
             virtual ~callable() = default;
 
-            callable(C*, R(C::*)(A...) volatile);
+            explicit callable(C * volatile obj, R(C::*memFunc)(A...) volatile) :
+                obj{ obj },
+                memFunc{ memFunc }
+            {}
 
-            R operator() (A && ...);
+            R operator() (A && ... args)
+            {
+                if (obj)
+                    return (obj->*memFunc)(std::forward(args)...);
+                else
+                    return std::declval<R>();
+            }
 
-            C * obj;
+            C * volatile obj;
             R(C::*memFunc)(A...) volatile;
         };
 
@@ -86,11 +107,20 @@ namespace task_executor
         {
             virtual ~callable() = default;
 
-            callable(C*, R(C::*)(A...) const volatile);
+            explicit callable(C * const volatile obj, R(C::*memFunc)(A...) const volatile) :
+                obj{ obj },
+                memFunc{ memFunc }
+            {}
 
-            R operator() (A && ...);
+            R operator() (A && ...)
+            {
+                if (obj)
+                    return (obj->*memFunc)(std::forward(args)...);
+                else
+                    return std::declval<R>();
+            }
 
-            C * obj;
+            C * const volatile obj;
             R(C::*memFunc)(A...) const volatile;
         };
 
@@ -113,19 +143,19 @@ namespace task_executor
         }
         
         template<class C, class R, class... A>
-        auto make_callable(C* obj, R(C::* func)(A...) const)
+        auto make_callable(C * const obj, R(C::* func)(A...) const)
         {
             return callable<R(C::*)(A...) const>{ obj, func };
         }
 
         template<class C, class R, class... A>
-        auto make_callable(C* obj, R(C::* func)(A...) volatile)
+        auto make_callable(C * volatile obj, R(C::* func)(A...) volatile)
         {
             return callable<R(C::*)(A...) volatile>{ obj, func };
         }
 
         template<class C, class R, class... A>
-        auto make_callable(C* obj, R(C::* func)(A...) const volatile)
+        auto make_callable(C * const volatile obj, R(C::* func)(A...) const volatile)
         {
             return callable<R(C::*)(A...) const volatile>{ obj, func };
         }
