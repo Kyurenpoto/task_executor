@@ -162,36 +162,20 @@ namespace task_executor
         inline constexpr bool is_awaitable_v =
             is_awaitable<T>::value;
 
-        template<class ExecutableContinuation, class = void>
-        struct is_executable_continuation : std::false_type
+        template<class T, class = void>
+        struct is_defined : std::false_type
         {};
 
-        template<class ExecutableContinuation>
-        inline constexpr bool is_executable_continuation_v =
-            is_executable_continuation<ExecutableContinuation>::value;
-
-        template<class AwaitableContinuation, class = void>
-        struct is_awaitable_continuation : std::false_type
+        template<class T>
+        struct is_defined<T,
+            std::enable_if_t<std::is_object<T>::value &&
+                             !std::is_pointer<T>::value &&
+                             (sizeof(T) > 0)>
+            > : std::true_type
         {};
 
-        template<class AwaitableContinuation>
-        inline constexpr bool is_awaitable_continuation_v =
-            is_awaitable_continuation<AwaitableContinuation>::value;
-
-        template<class WrapedExecutableContinuation, class = void>
-        struct is_wraped_executable_continuation : std::false_type
-        {};
-
-        template<class WrapedExecutableContinuation>
-        inline constexpr bool is_wraped_executable_continuation_v =
-            is_wraped_executable_continuation<WrapedExecutableContinuation>::value;
-
-        template<class WrapedAwaitableContinuation, class = void>
-        struct is_wraped_awaitable_continuation : std::false_type
-        {};
-
-        template<class WrapedAwaitableContinuation>
-        inline constexpr bool is_wraped_awaitable_continuation_v =
-            is_wraped_awaitable_continuation<WrapedAwaitableContinuation>::value;
+        template<class T>
+        inline constexpr bool is_defined_v =
+            is_defined<T>::value;
     }
 }

@@ -113,6 +113,7 @@ namespace task_executor
     }
 }
 
-#include "detail/invoker.h"
+#include "detail/graph.h"
 #include "detail/traits.h"
 #include "detail/interface.h"
+#include "detail/controller.h"

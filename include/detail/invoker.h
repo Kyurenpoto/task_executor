@@ -30,20 +30,7 @@ namespace task_executor
         template<class... Executable>
         struct executable_invoker
         {
-            executable_invoker(Executable && ... executables) :
-                executables{ executables }
-            {}
-
-            auto get_futures()
-            {
-                return detail::get_futures(promises);
-            }
-
-            template<class T>
-            using return_type = typename function_traits<T>::return_type;
-
-            std::tuple<callable<Executable>...> executables;
-            std::tuple<std::promise<return_type<Executable>>...> promises;
+            executable_invoker(Executable&& ... executables);
         };
 
         template<class... Awaitable>

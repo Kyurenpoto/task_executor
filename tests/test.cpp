@@ -6,6 +6,10 @@
 #include <experimental/coroutine>
 #include <experimental/generator>
 #include <functional>
+#include <algorithm>
+#include <execution>
+#include <vector>
+#include <atomic>
 
 using tttt = std::packaged_task<void()>;
 
@@ -29,6 +33,15 @@ struct test_t
     std::promise<int> x;
 };
 
+void func(std::vector<int> & v)
+{
+    std::atomic<int> sum = 0;
+    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&sum](int x)
+        {
+            sum.fetch_add(x, std::memory_order_relaxed);
+        });
+}
+
 TEST(test, test_func)
 {
     auto tmp = []()->std::future<int> { co_return 1; };
@@ -39,7 +52,4 @@ TEST(test, test_func)
 
     using type = decltype(&test_t::func);
     constexpr bool val5 = std::is_same_v<type, std::future<int>(test_t::*)(int)>;
-
-    test_t t;
-    auto f = task_executor::make_callable(&t, &test_t::func);
 }
