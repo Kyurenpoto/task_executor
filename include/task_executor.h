@@ -114,6 +114,7 @@ namespace task_executor
 }
 
 #include "detail/graph.h"
+#include "detail/controller.h"
 #include "detail/traits.h"
 #include "detail/interface.h"
 #include "detail/controller.h"
