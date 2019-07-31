@@ -25,8 +25,11 @@ namespace task_executor
             system & operator= (const system &) = delete;
             system & operator= (system &&) = delete;
 
-            system();
-            ~system();
+            system() = default;
+            ~system()
+            {
+                stopAll();
+            }
 
         protected:
             void addRequire(const std::size_t reqCount)
@@ -45,9 +48,9 @@ namespace task_executor
                     getRequireManager().getReqCount(), getIdManager());
             }
 
-            void removeThreads(const std::size_t currId)
+            void removeThreads()
             {
-                auto reserves = getIdManager().getReserves(currId);
+                auto reserves = getIdManager().getReserves(idThread);
 
                 for (auto& id : reserves)
                 {
@@ -56,24 +59,24 @@ namespace task_executor
                 }
             }
 
-            void reserveRemoveSelf(const std::size_t id)
+            void reserveRemoveSelf()
             {
                 std::size_t cntRequires = getRequireManager().getReqCount();
                 std::size_t cntReserves = getIdManager().getReserveCount();
                 std::size_t cntThreads = getThreadManager().getCntThread();
 
                 if (cntThreads - cntReserves > cntRequires)
-                    getIdManager().reserveId(id);
+                    getIdManager().reserveId(idThread);
             }
 
-            const bool isStop(const std::size_t id)
+            const bool isStop()
             {
-                return getThreadManager().getIsStop(id);
+                return getThreadManager().getIsStop(idThread);
             }
 
             void stopAll()
             {
-                std::thread{ [this]() { getThreadManager().removeAll(); } };
+                getThreadManager().removeAll(idThread);
             }
 
         private:
@@ -168,9 +171,6 @@ namespace task_executor
                     return reserves.size();
                 }
 
-            public:
-                static constexpr std::size_t INVALID_ID = 0;
-
             private:
                 std::mutex mtx;
                 std::deque<std::size_t> ids, reserves;
@@ -187,7 +187,7 @@ namespace task_executor
                         std::size_t id = idManager.popId(cntThreads);
                         
                         isStop[id] = false;
-                        threads[id] = new std::thread{ [this]() { thread_main(); } };
+                        threads[id] = new std::thread{ [this, id]() { thread_main(id); } };
 
                         ++cntThreads;
                     }
@@ -195,32 +195,43 @@ namespace task_executor
 
                 void removeThread(const std::size_t id)
                 {
-                    stopThread(id);
-
                     std::lock_guard<std::mutex> lock{ mtx };
 
-                    if (isStop.find(id) != isStop.end())
-                    {
-                        isStop.erase(id);
+                    if (isStop.find(id) == isStop.end())
+                        return;
 
-                        auto t = threads[id];
-                        threads.erase(id);
-                        delete t;
+                    isStop[id] = true;
+                    threads[id]->join();
 
-                        --cntThreads;
-                    }
+                    isStop.erase(id);
+
+                    auto t = threads[id];
+                    threads.erase(id);
+                    delete t;
+
+                    --cntThreads;
                 }
 
-                void removeAll()
+                void removeAll(const std::size_t id)
                 {
+                    std::unique_lock<std::mutex> lock{ mtx };
+
+                    threads.erase(id);
+
+                    lock.unlock();
+
                     while (true)
                     {
-                        std::lock_guard<std::mutex> lock{ mtx };
+                        lock.lock();
 
-                        if (cntThreads == 0)
-                            break;
+                        if (isStop.empty())
+                            return;
 
-                        removeThread(isStop.begin()->first);
+                        std::size_t idTarget = isStop.begin()->first;
+
+                        lock.unlock();
+
+                        removeThread(idTarget);
                     }
                 }
 
@@ -239,26 +250,13 @@ namespace task_executor
                 }
 
             private:
-                void stopThread(const std::size_t id)
+                void thread_main(const std::size_t id)
                 {
-                    std::lock_guard<std::mutex> lock{ mtx };
-
-                    if (isStop.find(id) != isStop.end())
-                    {
-                        isStop[id] = true;
-
-                        threads[id]->join();
-                    }
-                }
-
-                void thread_main()
-                {
-
+                    idThread = id;
                 }
 
             private:
                 std::mutex mtx;
-                std::condition_variable cv;
                 std::unordered_map<std::size_t, std::thread*> threads;
                 std::unordered_map<std::size_t, bool> isStop;
                 std::size_t cntThreads;
@@ -285,9 +283,7 @@ namespace task_executor
                 return instance;
             }
 
-        private:
-            static std::mutex mtx;
-            static std::condition_variable cv;
+            inline static thread_local std::size_t idThread = 0;
         };
 
         struct thread_pool :
