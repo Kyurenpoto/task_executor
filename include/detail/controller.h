@@ -17,7 +17,7 @@ namespace task_executor
             virtual ~controller() = default;
         };
 
-        struct system :
+        struct system final :
             controller
         {
             system(const system &) = delete;
@@ -31,7 +31,6 @@ namespace task_executor
                 stopAll();
             }
 
-        protected:
             void addRequire(const std::size_t reqCount)
             {
                 getRequireManager().addReqCount(reqCount);
@@ -286,7 +285,7 @@ namespace task_executor
             inline static thread_local std::size_t idThread = 0;
         };
 
-        struct thread_pool :
+        struct thread_pool final :
             controller
         {
             thread_pool(std::size_t reqThread);
