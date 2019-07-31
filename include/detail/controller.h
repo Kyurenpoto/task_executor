@@ -17,6 +17,8 @@ namespace task_executor
             virtual ~controller() = default;
         };
 
+        struct thread_pool;
+
         struct system final :
             controller
         {
@@ -30,6 +32,14 @@ namespace task_executor
             {
                 stopAll();
             }
+
+            void stopAll()
+            {
+                getThreadManager().removeAll(idThread);
+            }
+
+        protected:
+            friend thread_pool;
 
             void addRequire(const std::size_t reqCount)
             {
@@ -71,11 +81,6 @@ namespace task_executor
             const bool isStop()
             {
                 return getThreadManager().getIsStop(idThread);
-            }
-
-            void stopAll()
-            {
-                getThreadManager().removeAll(idThread);
             }
 
         private:
@@ -288,8 +293,25 @@ namespace task_executor
         struct thread_pool final :
             controller
         {
-            thread_pool(std::size_t reqThread);
-            ~thread_pool();
+            thread_pool(const thread_pool &) = delete;
+            thread_pool(thread_pool &&) = delete;
+            thread_pool & operator= (const thread_pool &) = delete;
+            thread_pool & operator= (thread_pool &&) = delete;
+
+            thread_pool(std::size_t reqThread) :
+                reqThread{ reqThread }
+            {
+                s.addRequire(reqThread);
+            }
+
+            ~thread_pool()
+            {
+                s.removeRequire(reqThread);
+            }
+
+        private:
+            system s;
+            std::size_t reqThread;
         };
     }
 }
