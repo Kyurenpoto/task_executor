@@ -1,7 +1,7 @@
 #pragma once
 
 #include <atomic>
-#include <memory>
+#include <unordered_set>
 
 namespace task_executor
 {
@@ -32,7 +32,6 @@ namespace task_executor
                 }
             }
 
-        private:
             struct hazard_list_ptr
             {
                 std::atomic_bool active = false;
@@ -40,6 +39,25 @@ namespace task_executor
                 hazard_list_ptr * next = nullptr;
             };
 
+            hazard_list_ptr * alloc()
+            {
+                return hazardList.alloc();
+            }
+
+            void release(hazard_list_ptr * p)
+            {
+                hazardList.release(p);
+            }
+
+            void retire(void * p)
+            {
+                retireList.push(p);
+
+                if (retireList.size >= retire_list::MAX_SIZE)
+                    scan();
+            }
+
+        private:
             struct hazard_list
             {
                 ~hazard_list()
@@ -90,20 +108,24 @@ namespace task_executor
                 std::atomic<hazard_list_ptr *> head = nullptr;
             };
 
+            struct retire_list_ptr
+            {
+                void * node = nullptr;
+                retire_list_ptr * next = nullptr;
+            };
+
             struct retire_list
             {
-                struct retire_list_ptr
-                {
-                    void * node = nullptr;
-                    retire_list_ptr * next = nullptr;
-                };
-
                 void push(void * node)
                 {
                     retire_list_ptr * p{ new retire_list_ptr };
+                    
                     p->node = node;
                     p->next = head;
+                    
                     head = p;
+
+                    ++size;
                 }
 
                 void * pop()
@@ -114,25 +136,28 @@ namespace task_executor
                     void * node = head->node;
                     
                     retire_list_ptr * tmp = head;
-
                     head = head->next;
-
                     delete tmp;
+
+                    --size;
 
                     return node;
                 }
 
                 retire_list_ptr * head = nullptr;
+                std::size_t size;
+
+                static constexpr std::size_t MAX_SIZE = 128;
+            };
+
+            struct retire_list_list_ptr
+            {
+                retire_list * node = nullptr;
+                retire_list_list_ptr * next = nullptr;
             };
 
             struct retire_list_list
             {
-                struct retire_list_list_ptr
-                {
-                    retire_list * node = nullptr;
-                    retire_list_list_ptr * next = nullptr;
-                };
-
                 void push(retire_list * node)
                 {
                     retire_list_list_ptr * p{ new retire_list_list_ptr };
@@ -159,6 +184,31 @@ namespace task_executor
 
                 retire_list_list_ptr * head = nullptr;
             };
+
+            void scan()
+            {
+                std::unordered_set<void *> hazardPointers;
+                for (hazard_list_ptr * p = hazardList.head.load();
+                    p != nullptr; p = p->next)
+                    if (p->node != nullptr)
+                        hazardPointers.insert(p->node);
+
+                for (auto p = retireList.head; p != nullptr;)
+                {
+                    if (hazardPointers.find(p->node) == hazardPointers.end())
+                    {
+                        delete p->node;
+                        auto tmp = p->next;
+                        delete p;
+                        p = tmp;
+
+                        if (retireList.head == nullptr)
+                            retireList.head = p;
+                    }
+                    else
+                        p = p->next;
+                }
+            }
 
             static hazard_list hazardList;
             static thread_local retire_list retireList;
