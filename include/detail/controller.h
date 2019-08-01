@@ -8,6 +8,8 @@
 #include <set>
 #include <deque>
 
+#include "crt/hazard_pointer.h"
+
 namespace task_executor
 {
     inline namespace controller_v1
