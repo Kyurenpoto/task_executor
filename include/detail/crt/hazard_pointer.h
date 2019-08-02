@@ -173,6 +173,19 @@ namespace task_executor
                     return node;
                 }
 
+                retire_list_ptr * erase(retire_list_ptr* p)
+                {
+                    auto tmp = p->next;
+
+                    delete p->node;
+                    delete p;
+
+                    if (head == nullptr)
+                        head = tmp;
+                    
+                    return tmp;
+                }
+
                 retire_list_ptr * head = nullptr;
                 std::size_t size;
 
@@ -263,21 +276,11 @@ namespace task_executor
                     if (p->node != nullptr)
                         hazardPointers.insert(p->node);
 
-                for (auto p = getRetireList()->head; p != nullptr;)
-                {
-                    if (hazardPointers.find(p->node->load()) == hazardPointers.end())
-                    {
-                        delete p->node;
-                        auto tmp = p->next;
-                        delete p;
-                        p = tmp;
-
-                        if (getRetireList()->head == nullptr)
-                            getRetireList()->head = p;
-                    }
-                    else
-                        p = p->next;
-                }
+                for (auto p = getRetireList()->head; p != nullptr; p =
+                    hazardPointers.find(p->node->load()) ==
+                    hazardPointers.end() ?
+                    getRetireList()->erase(p) :
+                    p->next);
             }
 
             static hazard_list hazardList;
