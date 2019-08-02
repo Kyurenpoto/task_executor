@@ -101,9 +101,7 @@ namespace task_executor
             struct retire_node_base
             {
                 virtual ~retire_node_base() = default;
-                virtual void store(void *) = 0;
                 virtual void * load() = 0;
-                virtual void release() = 0;
             };
 
             template<class T>
@@ -116,22 +114,12 @@ namespace task_executor
 
                 ~retire_node()
                 {
-                    release();
-                }
-
-                void store(void * p) override
-                {
-                    ptr = p;
+                    delete ptr;
                 }
 
                 void * load() override
                 {
                     return ptr;
-                }
-
-                void release() override
-                {
-                    delete ptr;
                 }
 
                 T * ptr = nullptr;
