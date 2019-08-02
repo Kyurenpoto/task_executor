@@ -14,10 +14,7 @@ namespace task_executor
             hazard_pointer_manager & operator= (const hazard_pointer_manager &) = delete;
             hazard_pointer_manager & operator= (hazard_pointer_manager &&) = delete;
 
-            hazard_pointer_manager()
-            {
-                retireListList.push(&retireList);
-            }
+            hazard_pointer_manager() = default;
 
             ~hazard_pointer_manager()
             {
@@ -29,6 +26,8 @@ namespace task_executor
 
                     while ((p = list->pop()) != nullptr)
                         delete p;
+
+                    delete list;
                 }
             }
 
@@ -51,9 +50,9 @@ namespace task_executor
 
             void retire(void * p)
             {
-                retireList.push(p);
+                getRetireList()->push(p);
 
-                if (retireList.size >= retire_list::MAX_SIZE)
+                if (getRetireList()->size >= retire_list::MAX_SIZE)
                     scan();
             }
 
@@ -185,6 +184,20 @@ namespace task_executor
                 retire_list_list_ptr * head = nullptr;
             };
 
+            retire_list * getRetireList()
+            {
+                static thread_local retire_list * retireList = nullptr;
+
+                if (retireList == nullptr)
+                {
+                    retireList = new retire_list;
+
+                    retireListList.push(retireList);
+                }
+
+                return retireList;
+            }
+
             void scan()
             {
                 std::unordered_set<void *> hazardPointers;
@@ -193,7 +206,7 @@ namespace task_executor
                     if (p->node != nullptr)
                         hazardPointers.insert(p->node);
 
-                for (auto p = retireList.head; p != nullptr;)
+                for (auto p = getRetireList()->head; p != nullptr;)
                 {
                     if (hazardPointers.find(p->node) == hazardPointers.end())
                     {
@@ -202,8 +215,8 @@ namespace task_executor
                         delete p;
                         p = tmp;
 
-                        if (retireList.head == nullptr)
-                            retireList.head = p;
+                        if (getRetireList()->head == nullptr)
+                            getRetireList()->head = p;
                     }
                     else
                         p = p->next;
@@ -211,7 +224,6 @@ namespace task_executor
             }
 
             static hazard_list hazardList;
-            static thread_local retire_list retireList;
             static retire_list_list retireListList;
         };
     }
