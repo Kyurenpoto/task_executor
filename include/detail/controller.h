@@ -265,7 +265,7 @@ namespace task_executor
                 std::mutex mtx;
                 std::unordered_map<std::size_t, std::thread*> threads;
                 std::unordered_map<std::size_t, bool> isStop;
-                std::size_t cntThreads;
+                std::size_t cntThreads = 0;
             };
 
             static require_manager& getRequireManager()
@@ -341,8 +341,11 @@ namespace task_executor
             void addRequire(const std::size_t reqCount);
             void removeRequire(const std::size_t reqCount);
             void adjustThreadCount();
-            bool isStop();
-            void setStop();
+
+            bool isStop()
+            {
+                return getNode()->isStop.load();
+            }
 
         private:
             struct node_ptr
@@ -359,14 +362,74 @@ namespace task_executor
 
             struct thread_list
             {
-                node_ptr * add();
+                void add()
+                {
+                    for (auto p = head.load(); p != nullptr; p = p->next)
+                    {
+                        bool tmp = p->node->isStop.load();
+                        if (!tmp && p->node->isStop.compare_exchange_weak(tmp, true))
+                        {
+                            p->node->threadObj =
+                                std::thread{ &system::thread_main, &system::getInstance() };
 
-                void release(node_ptr *);
+                            return;
+                        }
+                    }
+
+                    thread_list_ptr * ptr = new thread_list_ptr;
+                    ptr->node = new node_ptr;
+                    ptr->node->threadObj =
+                        std::thread{ &system::thread_main, &system::getInstance() };
+                }
+
+                void release(node_ptr * node)
+                {
+                    node->isStop.store(true);
+
+                    if (node->threadObj.joinable())
+                        node->threadObj.join();
+                }
+
+                node_ptr * find()
+                {
+                    std::thread::id id = std::this_thread::get_id();
+
+                    for (auto p = head.load(); p != nullptr; p = p->next)
+                        if (p->node->threadObj.get_id() == id)
+                            return p->node;
+
+                    return nullptr;
+                }
 
                 std::atomic<thread_list_ptr *> head = nullptr;
+                std::atomic<std::size_t> size;
             };
 
-            node_ptr * getNode();
+            static system & getInstance()
+            {
+                static system instance;
+
+                return instance;
+            }
+
+            thread_list & getThreadList()
+            {
+                static thread_list threadList;
+
+                return threadList;
+            }
+
+            node_ptr * getNode()
+            {
+                static thread_local node_ptr * node = getThreadList().find();
+
+                return node;
+            }
+
+            void thread_main()
+            {
+
+            }
         };
     }
 }
