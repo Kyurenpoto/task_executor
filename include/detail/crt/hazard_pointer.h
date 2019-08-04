@@ -1,9 +1,9 @@
 #pragma once
 
-#include <atomic>
 #include <unordered_set>
-#include <memory_resource>
 #include <vector>
+
+#include "utils.h"
 
 namespace task_executor
 {
@@ -11,14 +11,6 @@ namespace task_executor
     {
         struct hazard_pointer_manager final
         {
-            hazard_pointer_manager(const hazard_pointer_manager &) = delete;
-            hazard_pointer_manager(hazard_pointer_manager &&) = delete;
-            hazard_pointer_manager & operator= (const hazard_pointer_manager &) = delete;
-            hazard_pointer_manager & operator= (hazard_pointer_manager &&) = delete;
-
-            hazard_pointer_manager() = default;
-            ~hazard_pointer_manager() = default;
-
             struct hazard_list_ptr final
             {
                 std::atomic_bool active = false;
@@ -26,22 +18,20 @@ namespace task_executor
                 hazard_list_ptr * next = nullptr;
             };
 
-            static hazard_list_ptr * alloc()
+            hazard_list_ptr * alloc()
             {
-                return hazardList.alloc();
+                return getHazardList().alloc();
             }
 
-            static void release(hazard_list_ptr * p)
+            void release(hazard_list_ptr * p)
             {
-                hazardList.release(p);
+                getHazardList().release(p);
             }
 
             template<class T>
-            static void retire(T * p)
+            void retire(T * p)
             {
-                retire_node<T> * ptr = new retire_node<T>;
-                ptr->store(p);
-                getRetireList()->push(ptr);
+                getRetireList()->push(p);
 
                 if (getRetireList()->size >= retire_list::MAX_SIZE)
                     scan();
@@ -102,6 +92,10 @@ namespace task_executor
             {
                 virtual ~retire_node_base() = default;
                 virtual void * load() = 0;
+                virtual void release(std::pmr::unsynchronized_pool_resource * resource) = 0;
+
+                std::size_t size = 0;
+                std::size_t align = 0;
             };
 
             template<class T>
@@ -109,17 +103,21 @@ namespace task_executor
                 retire_node_base
             {
                 retire_node(T * p) :
-                    ptr{ p }
+                    ptr{ p },
+                    size{ sizeof(retire_node<T>) }
+                    align{ alignof(retire_node<T>) }
                 {}
-
-                ~retire_node()
-                {
-                    delete ptr;
-                }
 
                 void * load() override
                 {
                     return ptr;
+                }
+
+                void release(std::pmr::unsynchronized_pool_resource * resource) override
+                {
+                    ptr->~T();
+
+                    resource->deallocate(ptr, sizeof(T), alignof(T));
                 }
 
                 T * ptr = nullptr;
@@ -133,11 +131,29 @@ namespace task_executor
 
             struct retire_list
             {
-                void push(retire_node_base * node)
+                retire_list() :
+                    resource{ getMemoryResource() }
+                {}
+
+                ~retire_list()
                 {
-                    retire_list_ptr * p = new retire_list_ptr;
+                    retire_node_base * p;
+
+                    while ((p = pop()) != nullptr)
+                    {
+                        p->release(resource);
+
+                        p->~retire_node_base();
+                        resource->deallocate(p, p->size, p->align);
+                    }
+                }
+
+                template<class T>
+                void push(T * ptr)
+                {
+                    retire_list_ptr * p = xnew<retire_list_ptr>(*resource);
                     
-                    p->node = node;
+                    p->node = xnew<retire_node<T>>(*resource, ptr);
                     p->next = head;
                     
                     head = p;
@@ -154,95 +170,54 @@ namespace task_executor
                     
                     retire_list_ptr * tmp = head;
                     head = head->next;
-                    delete tmp;
+                    xdelete(*resource, tmp);
 
                     --size;
 
                     return node;
                 }
 
-                retire_list_ptr * erase(retire_list_ptr* p)
+                retire_list_ptr * erase(retire_list_ptr * p)
                 {
                     auto tmp = p->next;
 
-                    delete p->node;
-                    delete p;
+                    p->node->release(resource);
+
+                    p->node->~retire_node_base();
+                    resource->deallocate(p->node, p->node->size, p->node->align);
+
+                    xdelete(*resource, p);
 
                     if (head == nullptr)
                         head = tmp;
+
+                    --size;
                     
                     return tmp;
                 }
 
                 retire_list_ptr * head = nullptr;
-                std::size_t size;
+                std::size_t size = 0;
+                std::pmr::unsynchronized_pool_resource * resource = nullptr;
 
                 static constexpr std::size_t MAX_SIZE = 128;
             };
 
-            struct retire_list_list_ptr
+            hazard_list & getHazardList()
             {
-                retire_list * node = nullptr;
-                retire_list_list_ptr * next = nullptr;
-            };
+                static hazard_list hazardList;
 
-            struct retire_list_list
+                return hazardList;
+            }
+
+            auto & getRetireListList()
             {
-                retire_list_list(const retire_list_list &) = delete;
-                retire_list_list(retire_list_list &&) = delete;
-                retire_list_list & operator= (const retire_list_list &) = delete;
-                retire_list_list & operator= (retire_list_list &&) = delete;
+                static atomic_monotic_list<retire_list> retireListList;
 
-                retire_list_list() = default;
-                
-                ~retire_list_list()
-                {
-                    retire_list * list;
+                return retireListList;
+            }
 
-                    while ((list = pop()) != nullptr)
-                    {
-                        void * p;
-
-                        while ((p = list->pop()) != nullptr)
-                            delete p;
-
-                        delete list;
-                    }
-                }
-
-                void push(retire_list * node)
-                {
-                    retire_list_list_ptr * p = new retire_list_list_ptr;
-                    p->node = node;
-
-                    retire_list_list_ptr * oldHead;
-                    do
-                    {
-                        oldHead = head.load();
-                        p->next = oldHead;
-                    } while (!head.compare_exchange_weak(oldHead, p));
-                }
-
-                retire_list * pop()
-                {
-                    if (head.load() == nullptr)
-                        return nullptr;
-
-                    retire_list * node = head.load()->node;
-                    
-                    retire_list_list_ptr * tmp = head.load();
-
-                    head.store(head.load()->next);
-
-                    delete tmp;
-
-                    return node;
-                }
-
-                std::atomic<retire_list_list_ptr *> head = nullptr;
-            };
-
-            static retire_list * getRetireList()
+            retire_list * getRetireList()
             {
                 static thread_local retire_list * retireList = nullptr;
 
@@ -250,16 +225,16 @@ namespace task_executor
                 {
                     retireList = new retire_list;
 
-                    retireListList.push(retireList);
+                    getRetireListList().push(retireList);
                 }
 
                 return retireList;
             }
 
-            static void scan()
+            void scan()
             {
                 std::unordered_multiset<void *> hazardPointers;
-                for (hazard_list_ptr * p = hazardList.head.load();
+                for (hazard_list_ptr * p = getHazardList().head.load();
                     p != nullptr; p = p->next)
                     if (p->node != nullptr)
                         hazardPointers.insert(p->node);
@@ -270,9 +245,6 @@ namespace task_executor
                     getRetireList()->erase(p) :
                     p->next);
             }
-
-            static hazard_list hazardList;
-            static retire_list_list retireListList;
         };
     }
 }
