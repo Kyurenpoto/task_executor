@@ -316,4 +316,57 @@ namespace task_executor
             std::size_t reqThread;
         };
     }
+
+    namespace controller_v2
+    {
+        struct system final :
+            controller
+        {
+            system(const system&) = delete;
+            system(system&&) = delete;
+            system& operator= (const system&) = delete;
+            system& operator= (system&&) = delete;
+
+            system() = default;
+            ~system()
+            {
+                stopAll();
+            }
+
+            void stopAll();
+
+        protected:
+            friend thread_pool;
+
+            void addRequire(const std::size_t reqCount);
+            void removeRequire(const std::size_t reqCount);
+            void adjustThreadCount();
+            bool isStop();
+            void setStop();
+
+        private:
+            struct node_ptr
+            {
+                std::atomic_bool isStop = false;
+                std::thread threadObj;
+            };
+
+            struct thread_list_ptr
+            {
+                node_ptr * node = nullptr;
+                thread_list_ptr * next = nullptr;
+            };
+
+            struct thread_list
+            {
+                node_ptr * add();
+
+                void release(node_ptr *);
+
+                std::atomic<thread_list_ptr *> head = nullptr;
+            };
+
+            node_ptr * getNode();
+        };
+    }
 }
