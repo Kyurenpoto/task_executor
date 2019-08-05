@@ -36,9 +36,10 @@ namespace task_executor
                     scan();
             }
 
-            void erase(std::byte * loc, std::size_t size)
+            template<class T>
+            void erase(T * p)
             {
-                getEraseList()->push(loc, size);
+                getEraseList()->push(p);
 
                 if (getEraseList()->size >= erase_list::MAX_SIZE)
                     scan();
@@ -208,10 +209,44 @@ namespace task_executor
                 std::pmr::unsynchronized_pool_resource * resource = nullptr;
             };
 
+            struct erase_node_base
+            {
+                virtual ~erase_node_base() = default;
+                virtual void * load() = 0;
+                virtual void release() = 0;
+
+                std::size_t size = 0;
+                std::size_t align = 0;
+            };
+
+            template<class T>
+            struct erase_node final :
+                erase_node_base
+            {
+                erase_node(T * p) :
+                    ptr{ p },
+                    size{ sizeof(erase_node<T>) }
+                    align{ alignof(erase_node<T>) }
+                {}
+
+                void * load() override
+                {
+                    return ptr;
+                }
+
+                void release() override
+                {
+                    ptr->~T();
+                }
+
+                T * ptr = nullptr;
+            };
+
             struct erase_list_ptr
             {
                 std::byte * loc = nullptr;
                 std::size_t sizeFill = 0;
+                erase_node_base * node = nullptr;
                 erase_list_ptr * next = nullptr;
             };
 
@@ -223,26 +258,42 @@ namespace task_executor
 
                 ~erase_list()
                 {
-                    while (head != nullptr)
+                    erase_node_base * p;
+
+                    while ((p = pop()) != nullptr)
                     {
-                        std::fill(head->loc, head->loc + head->sizeFill, std::byte{ 0 });
-                        
-                        erase_list_ptr * tmp = head;
-                        head = head->next;
-                        xdelete(tmp);
+                        p->release();
+                        p->~erase_node_base();
+                        resource->deallocate(p, p->size, p->align);
                     }
                 }
 
-                void push(std::byte * loc, std::size_t sizeFill)
+                template<class T>
+                void push(T * ptr)
                 {
                     erase_list_ptr * p = xnew<erase_list_ptr>(*resource);
-                    p->loc = loc;
-                    p->sizeFill = sizeFill;
+                    p->node = xnew<erase_node<T>>(*resource, ptr);
                     p->next = head;
-
+                    
                     head = p;
 
                     ++size;
+                }
+
+                erase_node_base * pop()
+                {
+                    if (head == nullptr)
+                        return nullptr;
+
+                    erase_node_base * node = head->node;
+                    
+                    erase_list_ptr * tmp = head;
+                    head = head->next;
+                    xdelete(*resource, tmp);
+
+                    --size;
+
+                    return node;
                 }
 
                 erase_list_ptr * remove(erase_list_ptr * p)
@@ -328,7 +379,7 @@ namespace task_executor
                 auto eraseList = getEraseList();
 
                 for (auto p = eraseList->head; p != nullptr; p =
-                    hazardPointers.find(p->loc) ==
+                    hazardPointers.find(p->node->load()) ==
                     hazardPointers.end() ?
                     eraseList->remove(p) :
                     p->next);
