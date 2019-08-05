@@ -8,7 +8,7 @@
 #include <set>
 #include <deque>
 
-#include "crt/hazard_pointer.h"
+#include "crt/crt_queue.h"
 
 namespace task_executor
 {
@@ -348,6 +348,15 @@ namespace task_executor
             }
 
         private:
+            struct require_set
+            {
+                enum query_type
+                {
+                    ADD,
+                    REMOVE
+                };
+            };
+
             struct node_ptr
             {
                 std::atomic_bool isStop = false;

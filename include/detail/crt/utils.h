@@ -12,7 +12,7 @@ namespace task_executor
         {
             ~atomic_monotic_list()
             {
-                while (true)
+                for (;;)
                 {
                     atomic_monotic_ptr * p = head.load();
                     if (p == nullptr)
