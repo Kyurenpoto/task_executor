@@ -37,6 +37,14 @@ namespace task_executor
                     scan();
             }
 
+            void erase(std::byte * loc, std::size_t size)
+            {
+                getEraseList()->push(loc, size);
+
+                if (getEraseList()->size >= erase_list::MAX_SIZE)
+                    scan();
+            }
+
         private:
             struct hazard_list
             {
@@ -142,7 +150,6 @@ namespace task_executor
                     while ((p = pop()) != nullptr)
                     {
                         p->release(resource);
-
                         p->~retire_node_base();
                         resource->deallocate(p, p->size, p->align);
                     }
@@ -152,7 +159,6 @@ namespace task_executor
                 void push(T * ptr)
                 {
                     retire_list_ptr * p = xnew<retire_list_ptr>(*resource);
-                    
                     p->node = xnew<retire_node<T>>(*resource, ptr);
                     p->next = head;
                     
@@ -177,9 +183,9 @@ namespace task_executor
                     return node;
                 }
 
-                retire_list_ptr * erase(retire_list_ptr * p)
+                retire_list_ptr * remove(retire_list_ptr * p)
                 {
-                    auto tmp = p->next;
+                    retire_list_ptr * tmp = p->next;
 
                     p->node->release(resource);
 
@@ -196,11 +202,71 @@ namespace task_executor
                     return tmp;
                 }
 
+                static constexpr std::size_t MAX_SIZE = 128;
+
                 retire_list_ptr * head = nullptr;
                 std::size_t size = 0;
                 std::pmr::unsynchronized_pool_resource * resource = nullptr;
+            };
+
+            struct erase_list_ptr
+            {
+                std::byte * loc = nullptr;
+                std::size_t sizeFill = 0;
+                erase_list_ptr * next = nullptr;
+            };
+
+            struct erase_list
+            {
+                erase_list() :
+                    resource{ getMemoryResource() }
+                {}
+
+                ~erase_list()
+                {
+                    while (head != nullptr)
+                    {
+                        std::fill(head->loc, head->loc + head->sizeFill, 0);
+                        
+                        erase_list_ptr * tmp = head;
+                        head = head->next;
+                        xdelete(tmp);
+                    }
+                }
+
+                void push(std::byte * loc, std::size_t sizeFill)
+                {
+                    erase_list_ptr * p = xnew<erase_list_ptr>(*resource);
+                    p->loc = loc;
+                    p->size = sizeFill;
+                    p->next = head;
+
+                    head = p;
+
+                    ++size;
+                }
+
+                erase_list_ptr * remove(erase_list_ptr * p)
+                {
+                    erase_list_ptr * tmp = p->next;
+
+                    std::fill(p->loc, p->loc + p->sizeFill, 0);
+
+                    xdelete(*resource, p);
+
+                    if (head == nullptr)
+                        head = tmp;
+
+                    --size;
+
+                    return tmp;
+                }
 
                 static constexpr std::size_t MAX_SIZE = 128;
+
+                erase_list_ptr * head = nullptr;
+                std::size_t size = 0;
+                std::pmr::memory_resource * resource = nullptr;
             };
 
             hazard_list & getHazardList()
@@ -217,6 +283,13 @@ namespace task_executor
                 return retireListList;
             }
 
+            auto & getEraseListList()
+            {
+                static atomic_monotic_list<erase_list> eraseListList;
+
+                return eraseListList;
+            }
+
             retire_list * getRetireList()
             {
                 static thread_local retire_list * retireList = nullptr;
@@ -231,18 +304,39 @@ namespace task_executor
                 return retireList;
             }
 
+            erase_list * getEraseList()
+            {
+                static thread_local erase_list * eraseList = nullptr;
+
+                if (eraseList == nullptr)
+                {
+                    eraseList = new erase_list;
+
+                    getEraseListList().push(eraseList);
+                }
+
+                return eraseList;
+            }
+
             void scan()
             {
                 std::unordered_multiset<void *> hazardPointers;
-                for (hazard_list_ptr * p = getHazardList().head.load();
+                for (auto p = getHazardList().head.load();
                     p != nullptr; p = p->next)
                     if (p->node != nullptr)
                         hazardPointers.insert(p->node);
 
-                for (auto p = getRetireList()->head; p != nullptr; p =
+                scanList(hazardPointers, getEraseList());
+                scanList(hazardPointers, getRetireList());
+            }
+
+            template<class List>
+            void scanList(std::unordered_multiset<void *> & hazardPointers, List * list)
+            {
+                for (auto p = list->head; p != nullptr; p =
                     hazardPointers.find(p->node->load()) ==
                     hazardPointers.end() ?
-                    getRetireList()->erase(p) :
+                    list->remove(p) :
                     p->next);
             }
         };
