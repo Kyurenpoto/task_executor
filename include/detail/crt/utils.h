@@ -75,9 +75,9 @@ namespace task_executor
         template<class T, class... Args>
         inline T * xnew(std::pmr::memory_resource & resource, Args && ... args)
         {
-            T * tmp = resource.allocate(sizeof(T), alignof(T));
+            T * tmp = static_cast<T *>(resource.allocate(sizeof(T), alignof(T)));
 
-            return new(tmp) T{ std::forward(args...) };
+            return new(tmp) T{ std::forward(args)... };
         }
 
         template<class T, class... Args>

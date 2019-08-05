@@ -1,7 +1,6 @@
 #pragma once
 
-#include <unordered_set>
-#include <vector>
+#include <algorithm>
 
 #include "utils.h"
 
@@ -226,7 +225,7 @@ namespace task_executor
                 {
                     while (head != nullptr)
                     {
-                        std::fill(head->loc, head->loc + head->sizeFill, 0);
+                        std::fill(head->loc, head->loc + head->sizeFill, std::byte{ 0 });
                         
                         erase_list_ptr * tmp = head;
                         head = head->next;
@@ -238,7 +237,7 @@ namespace task_executor
                 {
                     erase_list_ptr * p = xnew<erase_list_ptr>(*resource);
                     p->loc = loc;
-                    p->size = sizeFill;
+                    p->sizeFill = sizeFill;
                     p->next = head;
 
                     head = p;
@@ -250,7 +249,7 @@ namespace task_executor
                 {
                     erase_list_ptr * tmp = p->next;
 
-                    std::fill(p->loc, p->loc + p->sizeFill, 0);
+                    std::fill(p->loc, p->loc + p->sizeFill, std::byte{ 0 });
 
                     xdelete(*resource, p);
 
@@ -326,17 +325,20 @@ namespace task_executor
                     if (p->node != nullptr)
                         hazardPointers.insert(p->node);
 
-                scanList(hazardPointers, getEraseList());
-                scanList(hazardPointers, getRetireList());
-            }
+                auto eraseList = getEraseList();
 
-            template<class List>
-            void scanList(std::unordered_multiset<void *> & hazardPointers, List * list)
-            {
-                for (auto p = list->head; p != nullptr; p =
+                for (auto p = eraseList->head; p != nullptr; p =
+                    hazardPointers.find(p->loc) ==
+                    hazardPointers.end() ?
+                    eraseList->remove(p) :
+                    p->next);
+
+                auto retireList = getRetireList();
+
+                for (auto p = retireList->head; p != nullptr; p =
                     hazardPointers.find(p->node->load()) ==
                     hazardPointers.end() ?
-                    list->remove(p) :
+                    retireList->remove(p) :
                     p->next);
             }
         };
