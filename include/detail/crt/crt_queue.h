@@ -7,121 +7,15 @@
 
 namespace task_executor
 {
-    inline namespace crt_queue_v1
-    {
-        template<class T>
-        struct crt_queue
-        {            
-            void push(T * data)
-            {
-                node_ptr * node = xnew<node_ptr>(data);
-                node_ptr * oldBack = back.load();
-
-                if (oldBack == nullptr && back.compare_exchange_weak(oldBack, node))
-                {
-                    front.store(node);
-
-                    return;
-                }
-
-                auto hazardPointer = hazardPointerManager.alloc();
-
-                for (;;)
-                {
-                    oldBack = back.load();
-                    hazardPointer->node = oldBack;
-
-                    if (oldBack != back.load())
-                        continue;
-
-                    node_ptr * next = oldBack->next.load();
-                    if (next != nullptr)
-                    {
-                        back.compare_exchange_weak(oldBack, next);
-
-                        continue;
-                    }
-
-                    if (oldBack->next.compare_exchange_weak(next, node))
-                    {
-                        back.compare_exchange_weak(oldBack, node);
-
-                        hazardPointerManager.release(hazardPointer);
-
-                        node_ptr * oldFront = front.load();
-                        if (oldFront == nullptr)
-                            front.compare_exchange_weak(oldFront, node);
-
-                        break;
-                    }
-                }
-            }
-            
-            T * pop()
-            {
-                auto hazardPointer = hazardPointerManager.alloc();
-
-                for (;;)
-                {
-                    node_ptr * oldFront = front.load();
-                    node_ptr* oldBack = back.load();
-
-                    hazardPointer->node = oldFront;
-
-                    if (oldFront != front.load())
-                        continue;
-
-                    if (oldFront == nullptr)
-                    {
-                        hazardPointerManager.release(hazardPointer);
-
-                        return nullptr;
-                    }
-
-                    node_ptr * next = oldFront->next.load();
-                    if (oldFront == oldBack)
-                    {
-                        back.compare_exchange_weak(oldFront, next);
-
-                        continue;
-                    }
-
-                    T * data = oldFront->data;
-
-                    if (front.compare_exchange_weak(oldFront, next))
-                    {
-                        hazardPointerManager.release(hazardPointer);
-                        hazardPointerManager.retire(oldFront);
-
-                        return data;
-                    }
-                }
-            }
-
-        private:
-            struct node_ptr
-            {
-                node_ptr(T * data) :
-                    data{ data }
-                {}
-
-                T * data = nullptr;
-                std::atomic<node_ptr *> next = nullptr;
-            };
-
-            std::atomic<node_ptr *> front = nullptr;
-            std::atomic<node_ptr *> back = nullptr;
-            hazard_pointer_manager hazardPointerManager;
-        };
-    }
-
-    namespace crt_queue_v2
+    inline namespace crt_queue_v2
     {
         template<class T>
         struct crt_queue
         {
             bool isEmpty()
             {
+                auto hazard = hazardPointerManager.alloc();
+
                 for (;;)
                 {
                     node_ptr * oldFront = front.load();
@@ -129,13 +23,15 @@ namespace task_executor
                     if (oldFront == nullptr)
                         return true;
 
-                    T * oldBegin = oldFront->begin.load();
-                    T * oldEnd = oldFront->end.load();
+                    hazard->node = oldFront;
 
                     if (oldFront != front.load())
                         continue;
 
-                    return oldBegin == oldEnd;
+                    bool result = oldFront->begin.load() == oldFront->end.load();
+                    hazardPointerManager.release(hazard);
+
+                    return result;
                 }
             }
 
@@ -191,6 +87,8 @@ namespace task_executor
                     
                     hazardPointerManager.release(hazard2);
                     hazardPointerManager.release(hazard1);
+
+                    return;
                 }
             }
 
@@ -216,25 +114,25 @@ namespace task_executor
                         assert(oldFront != nullptr);
                     }
 
-                    T * oldBegin = oldFront->begin.load();
-                    T * oldEnd = oldFront->end.load();
-
                     if (oldFront != front.load())
                         continue;
 
+                    T * oldBegin;
+                    T * oldEnd;
                     T * newBegin;
 
                     do
                     {
                         oldBegin = oldFront->begin.load();
+                        oldEnd = oldFront->end.load();
                         hazard2->node = oldBegin;
-                        T * newBegin = oldBegin + sizeof(T);
+                        newBegin = oldBegin + sizeof(T);
                     } while (oldBegin != oldEnd &&
                         !oldFront->begin.compare_exchange_weak(oldBegin, newBegin));
 
                     if (oldBegin == oldEnd)
                     {
-                        if (oldBegin - oldBack->buf == NODE_SIZE)
+                        if (oldBegin - oldFront->buf == NODE_SIZE)
                         {
                             front.compare_exchange_weak(oldFront, oldFront->next.load());
                             back.compare_exchange_weak(oldFront, oldFront->next.load());
