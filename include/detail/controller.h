@@ -3,7 +3,7 @@
 #include <atomic>
 #include <thread>
 
-#include "crt/utils.h"
+#include "crt/crt_queue.h"
 
 namespace task_executor
 {
@@ -15,6 +15,8 @@ namespace task_executor
         };
 
         struct thread_pool;
+
+		struct crt_fixed_queue;
 
         struct system final :
             controller
@@ -28,6 +30,8 @@ namespace task_executor
             ~system() = default;
 
         private:
+			using distributor = crt_queue<crt_fixed_queue *>;
+
             struct thread_property
             {
                 static constexpr std::size_t limitFailureBlocked = 5;
