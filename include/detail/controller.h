@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <thread>
+#include <array>
 
 #include "crt/crt_queue.h"
 
@@ -9,14 +10,32 @@ namespace task_executor
 {
     inline namespace controller_v1
     {
+        struct fixed_task_deque
+        {
+        private:
+            task_base * ptr = nullptr;
+            std::atomic<std::size_t> front = 0;
+            std::atomic<std::size_t> back = 0;
+        };
+
+        struct array_pool
+        {
+
+        };
+
+        struct fixed_deque_pool
+        {
+
+        };
+
         struct controller
         {
             virtual ~controller() = default;
+
+            crt_queue<fixed_task_deque *> dequeList;
         };
 
-        struct thread_pool;
-
-		struct crt_fixed_queue;
+        struct task_base;
 
         struct system final :
             controller
@@ -30,7 +49,7 @@ namespace task_executor
             ~system() = default;
 
         private:
-			using distributor = crt_queue<crt_fixed_queue *>;
+			using distributor = crt_queue<fixed_task_deque *>;
 
             struct thread_property
             {
