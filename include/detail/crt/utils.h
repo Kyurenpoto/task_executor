@@ -51,6 +51,67 @@ namespace task_executor
             std::atomic<atomic_monotic_ptr *> head = nullptr;
         };
 
+        template<class T>
+        struct atomic_reusable_list
+        {
+            ~atomic_reusable_list()
+            {
+                for (;;)
+                {
+                    atomic_reusable_ptr * p = head.load();
+                    if (p == nullptr)
+                        break;
+
+                    head.store(p->next);
+
+                    if (p->data != nullptr)
+                        delete p->data;
+
+                    delete p;
+                }
+            }
+
+            struct atomic_reusable_ptr
+            {
+                std::atomic_bool active = false;
+                T * data = nullptr;
+                atomic_reusable_ptr* next = nullptr;
+            };
+
+            atomic_reusable_ptr * gain()
+            {
+                atomic_reusable_ptr * p;
+
+                for (p = head.load(); p != nullptr; p = p->next)
+                {
+                    bool tmp = p->active.load();
+                    if (!tmp && p->active.compare_exchange_weak(tmp, true))
+                        return p;
+                }
+
+                p = new atomic_reusable_ptr;
+                p->active.store(true);
+
+                atomic_reusable_ptr * oldHead;
+
+                do
+                {
+                    oldHead = head.load();
+                    p->next = oldHead;
+                } while (!head.compare_exchange_weak(oldHead, p));
+
+                return p;
+            }
+
+            void release(atomic_reusable_ptr * p)
+            {
+                p->active.store(false);
+                p->node = nullptr;
+            }
+
+            std::atomic<atomic_reusable_ptr *> head = nullptr;
+        };
+
         inline auto & getMemoryResourceList()
         {
             static atomic_monotic_list<std::pmr::unsynchronized_pool_resource> resourceList;

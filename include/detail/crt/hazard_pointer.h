@@ -11,16 +11,12 @@ namespace task_executor
     {
         struct hazard_pointer_manager final
         {
-            struct hazard_list_ptr final
-            {
-                std::atomic_bool active = false;
-                void * node = nullptr;
-                hazard_list_ptr * next = nullptr;
-            };
+            using hazard_list_ptr =
+                atomic_reusable_list<void>::atomic_reusable_ptr;
 
             hazard_list_ptr * alloc()
             {
-                return getHazardList().alloc();
+                return getHazardList().gain();
             }
 
             void release(hazard_list_ptr * p)
@@ -47,55 +43,7 @@ namespace task_executor
             }
 
         private:
-            struct hazard_list
-            {
-                ~hazard_list()
-                {
-                    hazard_list_ptr * p;
-                    while ((p = head.load()) != nullptr)
-                    {
-                        head.store(p->next);
-                        
-                        if (p->node != nullptr)
-                            delete p->node;
-
-                        delete p;
-                    }
-                }
-
-                hazard_list_ptr * alloc()
-                {
-                    hazard_list_ptr * p;
-
-                    for (p = head.load(); p != nullptr; p = p->next)
-                    {
-                        bool tmp = p->active.load();
-                        if (!tmp && p->active.compare_exchange_weak(tmp, true))
-                            return p;
-                    }
-
-                    p = new hazard_list_ptr;
-                    p->active.store(true);
-
-                    hazard_list_ptr * oldHead;
-
-                    do
-                    {
-                        oldHead = head.load();
-                        p->next = oldHead;
-                    } while (!head.compare_exchange_weak(oldHead, p));
-
-                    return p;
-                }
-
-                void release(hazard_list_ptr * p)
-                {
-                    p->active.store(false);
-                    p->node = nullptr;
-                }
-
-                std::atomic<hazard_list_ptr *> head = nullptr;
-            };
+            using hazard_list = atomic_reusable_list<void>;
 
             struct retire_node_base
             {
@@ -374,8 +322,8 @@ namespace task_executor
                 std::unordered_multiset<void *> hazardPointers;
                 for (auto p = getHazardList().head.load();
                     p != nullptr; p = p->next)
-                    if (p->node != nullptr)
-                        hazardPointers.insert(p->node);
+                    if (p->data != nullptr)
+                        hazardPointers.insert(p->data);
 
                 auto eraseList = getEraseList();
 
