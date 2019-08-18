@@ -10,22 +10,46 @@ namespace task_executor
 {
     inline namespace controller_v1
     {
+        struct task_base;
+
         struct fixed_task_deque
         {
         private:
-            task_base * ptr = nullptr;
+            static constexpr std::size_t SIZE = 0x20;
+
+            const task_base * ptr;
             std::atomic<std::size_t> front = 0;
             std::atomic<std::size_t> back = 0;
         };
 
-        struct array_pool
-        {
-
-        };
-
         struct fixed_deque_pool
         {
+            fixed_deque_pool * loan();
+            void payOff(fixed_deque_pool *);
 
+        private:
+            static constexpr std::size_t ARRAY_SIZE = 0x100000;
+            static constexpr std::size_t DEQUE_CNT = 0x8000;
+
+            using array_pool = atomic_monotic_list<std::array<task_base *, ARRAY_SIZE>>;
+            using deque_pool = atomic_reusable_list<fixed_task_deque>;
+
+            auto & getArrayPool()
+            {
+                static array_pool pool;
+
+                return pool;
+            }
+
+            auto & getDequePool()
+            {
+                static deque_pool pool;
+                
+                return pool;
+            }
+
+            inline static task_base * origin = nullptr;
+            inline static std::size_t id = 0;
         };
 
         struct controller
@@ -34,8 +58,6 @@ namespace task_executor
 
             crt_queue<fixed_task_deque *> dequeList;
         };
-
-        struct task_base;
 
         struct system final :
             controller
