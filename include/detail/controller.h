@@ -14,22 +14,24 @@ namespace task_executor
 
         struct fixed_task_deque
         {
-        private:
             static constexpr std::size_t SIZE = 0x20;
 
-            const task_base * ptr;
+            task_base ** ptr = nullptr;
             std::atomic<std::size_t> front = 0;
             std::atomic<std::size_t> back = 0;
         };
 
         struct fixed_deque_pool
         {
-            fixed_deque_pool * loan();
-            void payOff(fixed_deque_pool *);
+			using deque_ptr = atomic_reusable_list<fixed_task_deque>::atomic_reusable_ptr;
+
+			deque_ptr * loan();
+			void payOff(deque_ptr *);
 
         private:
             static constexpr std::size_t ARRAY_SIZE = 0x100000;
-            static constexpr std::size_t DEQUE_CNT = 0x8000;
+			static constexpr std::size_t DEQUE_SIZE = 0x20;
+            static constexpr std::size_t DEQUE_CNT = ARRAY_SIZE / DEQUE_SIZE;
 
             using array_pool = atomic_monotic_list<std::array<task_base *, ARRAY_SIZE>>;
             using deque_pool = atomic_reusable_list<fixed_task_deque>;
@@ -48,8 +50,45 @@ namespace task_executor
                 return pool;
             }
 
-            inline static task_base * origin = nullptr;
-            inline static std::size_t id = 0;
+			void initFixedDeque(fixed_task_deque * fixedDeque)
+			{
+				static std::atomic<task_base **> origin = nullptr;
+				static std::atomic<std::size_t> id = 0;
+				static std::atomic<bool> isAlreadyAlloc = false;
+
+				std::size_t idOld = id.fetch_add(1);
+
+				while (1)
+				{
+					task_base ** originOld = origin.load();
+					bool isAlreadyAllocOld = isAlreadyAlloc.load();
+
+					if ((idOld & DEQUE_CNT) == 0 &&
+						isAlreadyAllocOld == false &&
+						isAlreadyAlloc.compare_exchange_weak(isAlreadyAllocOld, true))
+					{
+						auto arr = new std::array<task_base *, ARRAY_SIZE>;
+						getArrayPool().push(arr);
+
+						do
+						{
+							originOld = origin.load();
+						} while (!origin.compare_exchange_weak(originOld, arr->data()));
+
+						fixedDeque->ptr = arr->data() + (DEQUE_SIZE * (idOld & DEQUE_CNT));
+
+						break;
+					}
+					else if ((idOld & DEQUE_CNT) != 0)
+					{
+						fixedDeque->ptr = originOld + (DEQUE_SIZE * (idOld & DEQUE_CNT));
+						
+						break;
+					}
+
+					continue;
+				}
+			}
         };
 
         struct controller
