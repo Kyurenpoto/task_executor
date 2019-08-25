@@ -10,20 +10,23 @@ namespace task_executor
 {
     inline namespace graph_v1
     {
-        template<class Alloc>
-        struct task_base;
+        struct task_id;
 
-        template<class Alloc>
         struct graph
         {
-            using shared_task = std::shared_ptr<task_base<Alloc>>;
+            template<class Callable, class... Args>
+            const task_id & reserve(Callable &&, Args && ...);
 
-            void linkDependency(shared_task before, shared_task after);
+            void activate(const task_id &);
 
-            void removeTask(shared_task task);
+            void link(const task_id &, const task_id &);
+
+            void unbind(const task_id &);
+
+            void release(const task_id &);
 
         private:
-            std::pmr::unordered_map<typename shared_task::id_type, shared_task> tasks;
+            struct id_pool;
         };
     }
 }
