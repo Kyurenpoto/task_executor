@@ -106,7 +106,6 @@ namespace task_executor
             void release(atomic_reusable_ptr * p)
             {
                 p->active.store(false);
-                p->node = nullptr;
             }
 
             std::atomic<atomic_reusable_ptr *> head = nullptr;
