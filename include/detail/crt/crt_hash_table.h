@@ -5,6 +5,8 @@
 #include <variant>
 #include <optional>
 #include <tuple>
+#include <vector>
+#include <list>
 #include <functional>
 
 #include "hazard_pointer.h"
@@ -14,36 +16,19 @@ namespace task_executor
 	inline namespace crt_hash_table_v1
 	{
 		template<class T>
-		struct bucket_data_t
+		struct crt_hash_table
 		{
-			std::atomic_bool active = false;
-			std::variant<std::monostate, T> data = std::monostate{};
-		};
-
-		template<class T>
-		struct bucket_t
-		{
-			void init(const std::size_t len, std::pmr::unsynchronized_pool_resource * resource);
-
-			void release(const std::size_t len, std::pmr::unsynchronized_pool_resource * resource);
-
-			T & read(const std::size_t index);
-			
 			template<class U>
-			void write(const std::size_t index, U && data);
-			
-			template<class U>
-			std::optional<std::size_t> find(const std::size_t len, U && data);
+			struct hopscotch_bucket;
 
-		private:
-			bucket_data_t * dataArr = nullptr;
+			using bucket_array = std::vector<hopscotch_bucket<T>>;
+			using overflow_list = std::list<T>;
 		};
 
-		template<class T>
-		struct bucket_table_t
-		{
-		private:
-			bucket_t * bucket = nullptr;
-		};
+		template<class Key>
+		using crt_hash_set = crt_hash_table<Key>;
+
+		template<class Key, class Value>
+		using crt_hash_set = crt_hash_table<std::pair<Key, Value>>;
 	}
 }
