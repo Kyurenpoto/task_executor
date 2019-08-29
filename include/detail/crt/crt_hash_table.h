@@ -23,6 +23,15 @@ namespace task_executor
 
 			using bucket_array = std::vector<hopscotch_bucket<T>>;
 			using overflow_list = std::list<T>;
+
+			template<class U>
+			bool tryInsert(U &&);
+
+			template<class U>
+			T * find(U &&);
+
+			template<class U>
+			bool tryErase(U &&);
 		};
 
 		template<class Key>
