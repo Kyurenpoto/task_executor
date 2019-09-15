@@ -1,7 +1,5 @@
 #include "gtest/gtest.h"
 
-#include "../include/task_executor.h"
-
 #include <future>
 #include <experimental/coroutine>
 #include <experimental/generator>
@@ -10,6 +8,8 @@
 #include <execution>
 #include <vector>
 #include <atomic>
+
+#include "task_executor.h"
 
 using tttt = std::packaged_task<void()>;
 
@@ -44,12 +44,6 @@ void func(std::vector<int> & v)
 
 TEST(test, test_func)
 {
-    auto tmp = []()->std::future<int> { co_return 1; };
-    constexpr bool val1 = task_executor::is_awaitable_v<decltype(temp)>;
-    constexpr bool val2 = task_executor::is_awaitable_v<decltype(tmp)>;
-    constexpr bool val3 = task_executor::is_awaitable_v<test_t>;
-    constexpr bool val4 = task_executor::is_awaitable_v<decltype(&test_t::func)>;
-
     using type = decltype(&test_t::func);
     constexpr bool val5 = std::is_same_v<type, std::future<int>(test_t::*)(int)>;
 }

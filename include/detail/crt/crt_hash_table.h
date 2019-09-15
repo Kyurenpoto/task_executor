@@ -13,31 +13,31 @@
 
 namespace task_executor
 {
-	inline namespace crt_hash_table_v1
-	{
-		template<class T>
-		struct crt_hash_table
-		{
-			template<class U>
-			struct hopscotch_bucket;
+    inline namespace crt_hash_table_v1
+    {
+        template<class T>
+        struct crt_hash_table
+        {
+            template<class U>
+            struct hopscotch_bucket;
 
-			using bucket_array = std::vector<hopscotch_bucket<T>>;
-			using overflow_list = std::list<T>;
+            using bucket_array = std::vector<hopscotch_bucket<T>>;
+            using overflow_list = std::list<T>;
 
-			template<class U>
-			bool tryInsert(U &&);
+            template<class U>
+            bool tryInsert(U &&);
 
-			template<class U>
-			T * find(U &&);
+            template<class U>
+            T * find(U &&);
 
-			template<class U>
-			bool tryErase(U &&);
-		};
+            template<class U>
+            bool tryErase(U &&);
+        };
 
-		template<class Key>
-		using crt_hash_set = crt_hash_table<Key>;
+        template<class Key>
+        using crt_hash_set = crt_hash_table<Key>;
 
-		template<class Key, class Value>
-		using crt_hash_set = crt_hash_table<std::pair<Key, Value>>;
-	}
+        template<class Key, class Value>
+        using crt_hash_set = crt_hash_table<std::pair<Key, Value>>;
+    }
 }
