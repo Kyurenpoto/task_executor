@@ -22,7 +22,7 @@ namespace task_executor
             void release(hazard_list_ptr * p)
             {
                 getHazardList().release(p);
-				p->data = nullptr;
+                p->data = nullptr;
             }
 
             template<class T>

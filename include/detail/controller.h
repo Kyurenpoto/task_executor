@@ -23,14 +23,14 @@ namespace task_executor
 
         struct fixed_deque_pool
         {
-			using deque_ptr = atomic_reusable_list<fixed_task_deque>::atomic_reusable_ptr;
+            using deque_ptr = atomic_reusable_list<fixed_task_deque>::atomic_reusable_ptr;
 
-			deque_ptr * loan();
-			void payOff(deque_ptr *);
+            deque_ptr * loan();
+            void payOff(deque_ptr *);
 
         private:
             static constexpr std::size_t ARRAY_SIZE = 0x100000;
-			static constexpr std::size_t DEQUE_SIZE = 0x20;
+            static constexpr std::size_t DEQUE_SIZE = 0x20;
             static constexpr std::size_t DEQUE_CNT = ARRAY_SIZE / DEQUE_SIZE;
 
             using array_pool = atomic_monotic_list<std::array<task_base *, ARRAY_SIZE>>;
@@ -50,45 +50,45 @@ namespace task_executor
                 return pool;
             }
 
-			void initFixedDeque(fixed_task_deque * fixedDeque)
-			{
-				static std::atomic<task_base **> origin = nullptr;
-				static std::atomic<std::size_t> id = 0;
-				static std::atomic<bool> isAlreadyAlloc = false;
+            void initFixedDeque(fixed_task_deque * fixedDeque)
+            {
+                static std::atomic<task_base **> origin = nullptr;
+                static std::atomic<std::size_t> id = 0;
+                static std::atomic<bool> isAlreadyAlloc = false;
 
-				std::size_t idOld = id.fetch_add(1);
+                std::size_t idOld = id.fetch_add(1);
 
-				while (1)
-				{
-					task_base ** originOld = origin.load();
-					bool isAlreadyAllocOld = isAlreadyAlloc.load();
+                while (1)
+                {
+                    task_base ** originOld = origin.load();
+                    bool isAlreadyAllocOld = isAlreadyAlloc.load();
 
-					if ((idOld & DEQUE_CNT) == 0 &&
-						isAlreadyAllocOld == false &&
-						isAlreadyAlloc.compare_exchange_weak(isAlreadyAllocOld, true))
-					{
-						auto arr = new std::array<task_base *, ARRAY_SIZE>;
-						getArrayPool().push(arr);
+                    if ((idOld & DEQUE_CNT) == 0 &&
+                        isAlreadyAllocOld == false &&
+                        isAlreadyAlloc.compare_exchange_weak(isAlreadyAllocOld, true))
+                    {
+                        auto arr = new std::array<task_base *, ARRAY_SIZE>;
+                        getArrayPool().push(arr);
 
-						do
-						{
-							originOld = origin.load();
-						} while (!origin.compare_exchange_weak(originOld, arr->data()));
+                        do
+                        {
+                            originOld = origin.load();
+                        } while (!origin.compare_exchange_weak(originOld, arr->data()));
 
-						fixedDeque->ptr = arr->data() + (DEQUE_SIZE * (idOld & DEQUE_CNT));
+                        fixedDeque->ptr = arr->data() + (DEQUE_SIZE * (idOld & DEQUE_CNT));
 
-						break;
-					}
-					else if ((idOld & DEQUE_CNT) != 0)
-					{
-						fixedDeque->ptr = originOld + (DEQUE_SIZE * (idOld & DEQUE_CNT));
-						
-						break;
-					}
+                        break;
+                    }
+                    else if ((idOld & DEQUE_CNT) != 0)
+                    {
+                        fixedDeque->ptr = originOld + (DEQUE_SIZE * (idOld & DEQUE_CNT));
+                        
+                        break;
+                    }
 
-					continue;
-				}
-			}
+                    continue;
+                }
+            }
         };
 
         struct controller
@@ -110,7 +110,7 @@ namespace task_executor
             ~system() = default;
 
         private:
-			using distributor = crt_queue<fixed_task_deque *>;
+            using distributor = crt_queue<fixed_task_deque *>;
 
             struct thread_property
             {
