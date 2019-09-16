@@ -9,6 +9,36 @@ namespace task_executor
 {
     struct task_actor_t;
 
+    struct normal_distributor_t
+    {
+        void add(crt_list_deque<task_actor_t*>* normal)
+        {
+            normals.pushBack(normal);
+        }
+
+        crt_list_deque<task_actor_t*>* take()
+        {
+            if (normals.isEmpty())
+                return nullptr;
+            else
+                return normals.popFront();
+        }
+
+    private:
+        crt_list_deque<crt_list_deque<task_actor_t*>*> normals;
+    };
+
+    namespace detail
+    {
+        normal_distributor_t* getNormalDistributor()
+        {
+            static normal_distributor_t* distributor =
+                new normal_distributor_t;
+
+            return distributor;
+        }
+    }
+
     struct immediate_distributor_t
     {
         void add(std::tuple<crt_list_deque<task_actor_t*>,
