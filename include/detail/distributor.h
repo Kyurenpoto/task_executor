@@ -1,43 +1,15 @@
 #pragma once
 
+#include <array>
 #include <tuple>
 #include <chrono>
 
 #include "crt_struct.h"
+#include "constant.h"
 
 namespace task_executor
 {
     struct task_actor_t;
-
-    struct normal_distributor_t
-    {
-        void add(crt_list_deque<task_actor_t*>* normal)
-        {
-            normals.pushBack(normal);
-        }
-
-        crt_list_deque<task_actor_t*>* take()
-        {
-            if (normals.isEmpty())
-                return nullptr;
-            else
-                return normals.popFront();
-        }
-
-    private:
-        crt_list_deque<crt_list_deque<task_actor_t*>*> normals;
-    };
-
-    namespace detail
-    {
-        normal_distributor_t* getNormalDistributor()
-        {
-            static normal_distributor_t* distributor =
-                new normal_distributor_t;
-
-            return distributor;
-        }
-    }
 
     struct immediate_distributor_t
     {
@@ -101,14 +73,17 @@ namespace task_executor
     struct long_term_distributor_t
     {
         void add(crt_map<std::chrono::steady_clock::time_point, task_actor_t*>*
-            longTerm)
+            longTerm,
+            std::size_t idx)
         {
-            longTerms.pushBack(longTerm);
+            longTerms[idx].pushBack(longTerm);
         }
 
     private:
+        std::array<
         crt_list_deque<
-            crt_map<std::chrono::steady_clock::time_point, task_actor_t*>*>
+            crt_map<std::chrono::steady_clock::time_point, task_actor_t*>*>,
+            sizeLongTerm>
             longTerms;
     };
 

@@ -3,10 +3,12 @@
 #include <initializer_list>
 #include <variant>
 #include <tuple>
+#include <array>
 
 #include "context_creator.h"
 #include "crt_struct.h"
 #include "util.h"
+#include "constant.h"
 
 namespace task_executor
 {
@@ -40,7 +42,9 @@ namespace task_executor
             immediate;
         crt_map<std::chrono::steady_clock::time_point, task_actor_t*>*
             shortTerm;
-        crt_map<std::chrono::steady_clock::time_point, task_actor_t*>*
+        std::array<
+            crt_map<std::chrono::steady_clock::time_point, task_actor_t*>*,
+            sizeLongTerm>
             longTerm;
     };
 
