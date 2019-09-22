@@ -10,10 +10,26 @@ namespace task_executor
 {
     struct distributor_t
     {
-        void assignImmediate(task_deque*);
-        void assignShortTerm(timed_task_map*);
-        void assignLongTerm(timed_task_map*);
-        task_deque* takeImmediate();
+        void assignImmediate(task_deque* immediate)
+        {
+            immediates.pushBack(immediate);
+        }
+
+        void assignShortTerm(timed_task_map* shortTerm, std::size_t idxSlot)
+        {
+            shortTerms[idxSlot].pushBack(shortTerm);
+        }
+
+        void assignLongTerm(timed_task_map* longTerm, std::size_t idxSlot)
+        {
+            longTerms[idxSlot].pushBack(longTerm);
+        }
+
+        task_deque* takeImmediate()
+        {
+            return immediates.isEmpty() ? nullptr : immediates.popFront();
+        }
+
         void renewShortTerm();
         void renewLongTerm(std::size_t idxSlot);
 
