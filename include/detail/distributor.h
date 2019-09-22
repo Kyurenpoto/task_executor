@@ -4,95 +4,30 @@
 #include <tuple>
 #include <chrono>
 
-#include "crt_struct.h"
-#include "constant.h"
+#include "task_container.h"
 
 namespace task_executor
 {
-    struct task_actor_t;
-
-    struct immediate_distributor_t
+    struct distributor_t
     {
-        void add(std::tuple<crt_list_deque<task_actor_t*>,
-            std::atomic_bool, std::atomic_size_t>* immediate)
-        {
-            immediates.pushBack(immediate);
-        }
-        
-        std::tuple<crt_list_deque<task_actor_t*>,
-            std::atomic_bool, std::atomic_size_t>* take()
-        {
-            if (immediates.isEmpty())
-                return nullptr;
-            else
-                return immediates.popFront();
-        }
+        void assignImmediate(task_deque*);
+        void assignShortTerm(timed_task_map*);
+        void assignLongTerm(timed_task_map*);
+        task_deque* takeImmediate();
+        void renewShortTerm();
+        void renewLongTerm(std::size_t idxSlot);
 
     private:
-        crt_list_deque<std::tuple<crt_list_deque<task_actor_t*>,
-            std::atomic_bool, std::atomic_size_t>*>
-            immediates;
+        crt_list_deque<task_deque*> immediates;
+        std::array<crt_list_deque<timed_task_map*>, cntTimeSlot> shortTerms;
+        std::array<crt_list_deque<timed_task_map*>, cntTimeSlot> longTerms;
     };
 
     namespace detail
     {
-        immediate_distributor_t* getImmediateDistributor()
+        distributor_t* getDistributor()
         {
-            static immediate_distributor_t* distributor =
-                new immediate_distributor_t;
-
-            return distributor;
-        }
-    }
-
-    struct short_term_distributor_t
-    {
-        void add(crt_map<std::chrono::steady_clock::time_point, task_actor_t*>*
-            shortTerm)
-        {
-            shortTerms.pushBack(shortTerm);
-        }
-
-    private:
-        crt_list_deque<
-            crt_map<std::chrono::steady_clock::time_point, task_actor_t*>*>
-            shortTerms;
-    };
-
-    namespace detail
-    {
-        short_term_distributor_t* getShortTermDistributor()
-        {
-            static short_term_distributor_t* distributor =
-                new short_term_distributor_t;
-
-            return distributor;
-        }
-    }
-
-    struct long_term_distributor_t
-    {
-        void add(crt_map<std::chrono::steady_clock::time_point, task_actor_t*>*
-            longTerm,
-            std::size_t idx)
-        {
-            longTerms[idx].pushBack(longTerm);
-        }
-
-    private:
-        std::array<
-        crt_list_deque<
-            crt_map<std::chrono::steady_clock::time_point, task_actor_t*>*>,
-            sizeLongTerm>
-            longTerms;
-    };
-
-    namespace detail
-    {
-        long_term_distributor_t* getLongTermDistributor()
-        {
-            static long_term_distributor_t* distributor =
-                new long_term_distributor_t;
+            static distributor_t* distributor = new distributor_t;
 
             return distributor;
         }

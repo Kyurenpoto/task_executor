@@ -6,18 +6,16 @@
 #include <array>
 
 #include "context_creator.h"
-#include "crt_struct.h"
 #include "util.h"
-#include "constant.h"
+#include "task_container.h"
 
 namespace task_executor
 {
-    struct task_actor_t;
-
     /*
       backward push/pop, basically
       forward push/pop, without ownership
     */
+
     template<class T>
     struct executor_t :
         context_creator_t<executor_t<T>>
@@ -37,15 +35,9 @@ namespace task_executor
         }
 
     private:
-        std::tuple<crt_list_deque<task_actor_t*>,
-            std::atomic_bool, std::atomic_size_t>*
-            immediate;
-        crt_map<std::chrono::steady_clock::time_point, task_actor_t*>*
-            shortTerm;
-        std::array<
-            crt_map<std::chrono::steady_clock::time_point, task_actor_t*>*,
-            sizeLongTerm>
-            longTerm;
+        task_deque immediate;
+        std::array<timed_task_map*, cntTimeSlot> shortTerm;
+        std::array<timed_task_map*, cntTimeSlot> longTerm;
     };
 
     struct thread_pool_executor_t;
