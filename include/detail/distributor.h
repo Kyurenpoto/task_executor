@@ -30,13 +30,25 @@ namespace task_executor
             return immediates.isEmpty() ? nullptr : immediates.popFront();
         }
 
-        void renewShortTerm();
-        void renewLongTerm(std::size_t idxSlot);
+        void updateShortTerm()
+        {
+            for (auto& deq : shortTerms)
+                updateShortTerm(deq);
+        }
+
+        void updateLongTerm()
+        {
+            updateLongTerm(longTerms[idxCheckLongTerm++]);
+        }
 
     private:
+        void updateShortTerm(crt_list_deque<timed_task_map*>& deq);
+        void updateLongTerm(crt_list_deque<timed_task_map*>& deq);
+
         crt_list_deque<task_deque*> immediates;
         std::array<crt_list_deque<timed_task_map*>, cntTimeSlot> shortTerms;
         std::array<crt_list_deque<timed_task_map*>, cntTimeSlot> longTerms;
+        std::size_t idxUpdateLongTerm;
     };
 
     namespace detail
