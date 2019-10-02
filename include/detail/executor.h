@@ -1,7 +1,6 @@
 #pragma once
 
 #include <initializer_list>
-#include <variant>
 #include <tuple>
 #include <array>
 
@@ -39,18 +38,6 @@ namespace task_executor
         std::array<timed_task_map*, cntTimeSlot> shortTerm;
         std::array<timed_task_map*, cntTimeSlot> longTerm;
     };
-
-    struct thread_pool_executor_t;
-    struct strand_executor_t;
-    struct system_executor_t;
-
-    using general_executor_t =
-        std::variant<
-            std::nullptr_t,
-            thread_pool_executor_t*,
-            strand_executor_t*,
-            system_executor_t*
-        >;
 
     // Facade struct that can use executor through inheritance
     struct executable_t

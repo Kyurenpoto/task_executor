@@ -1,7 +1,7 @@
 #pragma once
 
-#include "executor.h"
-#include "task_actor.h"
+#include "context_creator.h"
+#include "task.h"
 
 namespace task_executor
 {
@@ -30,7 +30,8 @@ namespace task_executor
             return *task->result;
         }
 
-        void release(general_executor_t executor)
+        template<class Executor>
+        void release(Executor& executor)
         {
             for (;;)
             {
@@ -43,10 +44,7 @@ namespace task_executor
                 {
                     std::size_t cntPrior = task->cntPrior.load();
                     if (cntPrior == 0)
-                    {
-                        task->executor = executor;
-                        task->act();
-                    }
+                        task->act(executor);
 
                     task = nullptr;
 
@@ -56,7 +54,7 @@ namespace task_executor
         }
 
     protected:
-        task_actor_t* task;
+        task_t* task;
     };
 
     struct subcontext_t :

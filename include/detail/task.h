@@ -4,7 +4,7 @@
 #include <deque>
 #include <chrono>
 
-#include "executor.h"
+#include "util.h"
 
 namespace task_executor
 {
@@ -49,50 +49,52 @@ namespace task_executor
         std::chrono::steady_clock::time_point timePoint;
     };
 
-    template<class T>
     struct task_t
     {
         std::atomic_size_t cntPrior = 0;
-        std::deque<task_t<T>*> arrPostrior;
+        std::deque<task_t*> arrPostrior;
         invoker_base_t* invoker = nullptr;
         result_base_t* result = nullptr;
         std::deque<param_base_t*> arrParam;
         active_type_t activeType;
         std::atomic_bool isReleased = false;
-        general_executor_t executor = nullptr;
 
-        void act()
+        template<class Executor>
+        void act(Executor& executor)
         {
             // timer processing
 
             switch (activeType.action)
             {
             case active_type_t::action_t::POST:
-                post();
+                post(executor);
                 break;
             case active_type_t::action_t::DEFER:
-                defer();
+                defer(executor);
                 break;
             case active_type_t::action_t::DISPATCH:
-                dispatch();
+                dispatch(executor);
                 break;
             }
         }
 
     protected:
-        void post()
+        template<class Executor>
+        void post(Executor& executor)
         {
-            getConcrete<T&>(*this).post();
+            executor.assign(this);
         }
 
-        void defer()
+        template<class Executor>
+        void defer(Executor& executor)
         {
-            getConcrete<T&>(*this).defer();
+            // try to change owned deque
         }
 
-        void dispatch()
+        template<class Executor>
+        void dispatch(Executor& executor)
         {
-            getConcrete<T&>(*this).dispatch();
+            // execute immediately
         }
     };
 }

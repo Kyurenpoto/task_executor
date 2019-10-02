@@ -5,14 +5,14 @@
 
 namespace task_executor
 {
-    struct task_actor_t;
+    struct task_t;
 
     using timed_task_map =
-        crt_map<std::chrono::steady_clock::time_point, task_actor_t*>;
+        crt_map<std::chrono::steady_clock::time_point, task_t*>;
 
     struct task_deque
     {
-        crt_list_deque<task_actor_t*> tasks;
+        crt_list_deque<task_t*> tasks;
         std::atomic_bool hasOwner;
         std::atomic_size_t cntRemainingReference;
     };

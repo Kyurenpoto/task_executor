@@ -38,7 +38,7 @@ namespace task_executor
 
         void updateLongTerm()
         {
-            updateLongTerm(longTerms[idxCheckLongTerm++]);
+            updateLongTerm(longTerms[idxUpdateLongTerm++]);
         }
 
     private:
