@@ -38,8 +38,10 @@ namespace task_executor
     using nth_type_t = typename nth_type<N, Ts...>::type;
 
     template<class... Ts>
-    class byte_stream_t
+    struct byte_stream
     {
+        static_assert(sizeof...(Ts) > 0);
+
         template<std::size_t N>
         auto& get()
         {

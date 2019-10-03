@@ -3,38 +3,66 @@
 #include <atomic>
 #include <deque>
 #include <chrono>
+#include <functional>
 
 #include "util.h"
 #include "byte_stream.h"
 
 namespace task_executor
 {
-    struct param_base_t;
-    struct result_base_t;
-    struct invoker_base_t;
-
-    struct param_base_t
+    struct executable_base_t
     {
-        virtual void link(result_base_t*) = 0;
-        virtual void pass(result_base_t*) = 0;
-        virtual bool isValid() = 0;
+        void operator()()
+        {
+            execute();
+            transmit();
+        }
 
-    private:
-        bool isLinkded = false;
+        template<class Invokable>
+        void link(Invokable && invokable)
+        {
+            transmitter.push_back(invokable);
+        }
+
+        void transmit()
+        {
+            for (auto& f : transmitters)
+                f(this);
+        }
+
+        virtual void execute() = 0;
+
+    protected:
+        std::deque<std::function<void(executable_base_t*)>> transmitters;
     };
 
-    struct result_base_t
+    template<class Ret, class... Args>
+    struct executable_t :
+        executable_base_t
     {
-        virtual void link(std::initializer_list<param_base_t*>) = 0;
-        virtual void pass() = 0;
+        virtual void execute() override
+        {
+            ret = exe(args...);
+        }
 
-    private:
-        std::deque<param_base_t*> arrParam;
+        byte_stream<Args...> args;
+        byte_stream<Ret> ret;
+        std::function<Ret(Args...)> exe;
+        std::size_t cntReceptedArgs = 0;
     };
 
-    struct invoker_base_t
+    template<class... Args>
+    struct executable_t<void, Args...> :
+        executable_base_t
     {
-        virtual void invoke(std::deque<param_base_t*>, result_base_t*) = 0;
+        virtual void execute() override
+        {
+            exe(args...);
+        }
+
+        byte_stream<Args...> args;
+        std::function<void(Args...)> exe;
+        std::size_t cntReceptedArgs = 0;
     };
 
     enum class action_t
@@ -48,9 +76,7 @@ namespace task_executor
     {
         std::atomic_size_t cntPrior = 0;
         std::deque<task_t*> arrPostrior;
-        invoker_base_t* invoker = nullptr;
-        result_base_t* result = nullptr;
-        std::deque<param_base_t*> arrParam;
+        executable_base_t* executable = nullptr;
         std::atomic_bool isReleased = false;
 
         template<class Executor>

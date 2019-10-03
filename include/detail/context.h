@@ -19,15 +19,10 @@ namespace task_executor
             for (auto x : contexts)
                 task->arrPostrior.push_back(x->task);
         }
-        
-        const std::deque<param_base_t*>& getParamArr()
-        {
-            return task->arrParam;
-        }
 
-        const result_base_t& getResult()
+        const executable_base_t* getExecutable() const
         {
-            return *task->result;
+            return task->executable;
         }
 
         template<class Executor>
@@ -60,9 +55,9 @@ namespace task_executor
     struct subcontext_t :
         context_t
     {
-        void setInvoker(invoker_base_t* invoker)
+        void setExecutable(executable_base_t* executable)
         {
-            task->invoker = invoker;
+            task->executable = executable;
         }
     };
 }

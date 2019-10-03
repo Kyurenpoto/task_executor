@@ -40,8 +40,4 @@ namespace task_executor
     };
 
     // Facade struct that can use executor through inheritance
-    struct executable_t
-    {
-
-    };
 }
