@@ -60,11 +60,6 @@ namespace task_executor
     struct subcontext_t :
         context_t
     {
-        void setActiveType(active_type_t activeType)
-        {
-            task->activeType = activeType;
-        }
-
         void setInvoker(invoker_base_t* invoker)
         {
             task->invoker = invoker;

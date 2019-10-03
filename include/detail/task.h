@@ -36,17 +36,11 @@ namespace task_executor
         virtual void invoke(std::deque<param_base_t*>, result_base_t*) = 0;
     };
 
-    struct active_type_t
+    enum class action_t
     {
-        enum class action_t
-        {
-            POST,
-            DEFER,
-            DISPATCH
-        };
-
-        action_t action;
-        std::chrono::steady_clock::time_point timePoint;
+        POST,
+        DEFER,
+        DISPATCH
     };
 
     struct task_t
@@ -56,15 +50,12 @@ namespace task_executor
         invoker_base_t* invoker = nullptr;
         result_base_t* result = nullptr;
         std::deque<param_base_t*> arrParam;
-        active_type_t activeType;
         std::atomic_bool isReleased = false;
 
         template<class Executor>
-        void act(Executor& executor)
+        void act(Executor& executor, action_t action)
         {
-            // timer processing
-
-            switch (activeType.action)
+            switch (action)
             {
             case active_type_t::action_t::POST:
                 post(executor);
