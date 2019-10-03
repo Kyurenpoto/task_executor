@@ -5,6 +5,7 @@
 #include <chrono>
 
 #include "util.h"
+#include "byte_stream.h"
 
 namespace task_executor
 {
