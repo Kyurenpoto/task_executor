@@ -8,6 +8,11 @@
 
 namespace task_executor
 {
+    namespace detail
+    {
+        void timed_loop();
+    }
+
     struct distributor_t
     {
         void assignImmediate(task_deque* immediate)
@@ -17,11 +22,15 @@ namespace task_executor
 
         void assignShortTerm(timed_task_map* shortTerm, std::size_t idxSlot)
         {
+            cntTotalTimedTask += 1;
+
             shortTerms[idxSlot].pushBack(shortTerm);
         }
 
         void assignLongTerm(timed_task_map* longTerm, std::size_t idxSlot)
         {
+            cntTotalTimedTask += 1;
+
             longTerms[idxSlot].pushBack(longTerm);
         }
 
@@ -39,6 +48,12 @@ namespace task_executor
         void updateLongTerm()
         {
             updateLongTerm(longTerms[idxUpdateLongTerm++]);
+            idxUpdateLongTerm %= cntTimeSlot;
+        }
+
+        std::size_t getCntTotalTimedTask() const
+        {
+            return cntTotalTimedTask;
         }
 
     private:
@@ -48,7 +63,8 @@ namespace task_executor
         crt_list_deque<task_deque*> immediates;
         std::array<crt_list_deque<timed_task_map*>, cntTimeSlot> shortTerms;
         std::array<crt_list_deque<timed_task_map*>, cntTimeSlot> longTerms;
-        std::size_t idxUpdateLongTerm;
+        std::size_t idxUpdateLongTerm = 0;
+        std::size_t cntTotalTimedTask = 0;
     };
 
     namespace detail
@@ -58,6 +74,33 @@ namespace task_executor
             static distributor_t* distributor = new distributor_t;
 
             return distributor;
+        }
+
+        void timed_loop()
+        {
+            static std::atomic_bool hasOwner = false;
+
+            for (;;)
+            {
+                bool oldHasOwner = hasOwner.load();
+
+                if (oldHasOwner)
+                    return;
+
+                if (hasOwner.compare_exchange_weak(oldHasOwner, true))
+                    break;
+            }
+
+            auto distributor = getDistributor();
+
+            for (;distributor->getCntTotalTimedTask() != 0;
+                std::this_thread::sleep_for(sizeTimeSlot))
+            {
+                distributor->updateShortTerm();
+                distributor->updateLongTerm();
+            }
+
+            // post to system_executor
         }
     }
 }
