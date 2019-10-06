@@ -10,6 +10,28 @@
 
 namespace task_executor
 {
+    struct executable_base_t;
+    
+    using transmit_func =
+        std::function<void(executable_base_t*, executable_base_t*)>;
+
+    struct transmitter_t
+    {
+        void operator()(executable_base_t* from)
+        {
+            for (auto& [to, func] : targets)
+                func(from, to);
+        }
+
+        void addTarget(executable_base_t* to, transmit_func func)
+        {
+            targets.emplace_back(std::make_pair(to, func));
+        }
+
+    private:
+        std::deque<std::pair<executable_base_t*, transmit_func>> targets;
+    };
+
     struct executable_base_t
     {
         void operator()()
@@ -18,29 +40,46 @@ namespace task_executor
             transmit();
         }
 
-        template<class Invokable>
-        void link(Invokable && invokable)
+        void link(executable_base_t* target, transmit_func func)
         {
-            transmitter.push_back(invokable);
+            transmitter.addTarget(target, func);
         }
+
+    private:
+        virtual void execute() = 0;
 
         void transmit()
         {
-            for (auto& f : transmitters)
-                f(this);
+            transmitter(this);
         }
 
-        virtual void execute() = 0;
-
-    protected:
-        std::deque<std::function<void(executable_base_t*)>> transmitters;
+        transmitter_t transmitter;
     };
 
     template<class Ret, class... Args>
-    struct executable_t :
+    struct executable_t final :
         executable_base_t
     {
-        virtual void execute() override
+        executable_t(std::function<Ret(Args...)> func) :
+            exe{ func }
+        {}
+
+        template<std::size_t N, class T>
+        void setArg(T&& value)
+        {
+            static_assert(N < sizeof...(Args));
+            static_assert(std::is_convertible_v<T, nth_type_t<N, Args...>>);
+
+            args.get<N>() = static_cast<nth_type_t<N, Args...>>(value);
+        }
+
+        const Ret& getRet() const
+        {
+            return ret.get<0>();
+        }
+
+    private:
+        void execute() override
         {
             ret = exe(args...);
         }
@@ -52,10 +91,24 @@ namespace task_executor
     };
 
     template<class... Args>
-    struct executable_t<void, Args...> :
+    struct executable_t<void, Args...> final :
         executable_base_t
     {
-        virtual void execute() override
+        executable_t(std::function<void(Args...)> func) :
+            exe{ func }
+        {}
+
+        template<std::size_t N, class T>
+        void setArg(T&& value)
+        {
+            static_assert(N < sizeof...(Args));
+            static_assert(std::is_convertible_v<T, nth_type_t<N, Args...>>);
+
+            args.get<N>() = static_cast<nth_type_t<N, Args...>>(value);
+        }
+
+    protected:
+        void execute() override
         {
             exe(args...);
         }
