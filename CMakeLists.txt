@@ -23,4 +23,5 @@ else()
     add_compile_options(-std=c++2a -Wall -fcoroutines-ts)
 endif()
 
+add_subdirectory (libraries/doctest)
 add_subdirectory (tests)

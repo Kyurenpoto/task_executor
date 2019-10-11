@@ -57,8 +57,15 @@ namespace task_executor
         }
 
     private:
-        void updateShortTerm(crt_list_deque<timed_task_map*>& deq);
-        void updateLongTerm(crt_list_deque<timed_task_map*>& deq);
+		void updateShortTerm(crt_list_deque<timed_task_map*>& deq)
+		{
+
+		}
+
+		void updateLongTerm(crt_list_deque<timed_task_map*>& deq)
+		{
+
+		}
 
         crt_list_deque<task_deque*> immediates;
         std::array<crt_list_deque<timed_task_map*>, cntTimeSlot> shortTerms;

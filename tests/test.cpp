@@ -1,4 +1,5 @@
-#include "gtest/gtest.h"
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest/doctest.h"
 
 #include <future>
 #include <experimental/coroutine>
@@ -15,35 +16,35 @@ using tttt = std::packaged_task<void()>;
 
 std::experimental::generator<int> temp()
 {
-    co_yield 1;
+	co_yield 1;
 }
 
 struct test_t
 {
-    std::future<int> operator()()
-    {
-        return x.get_future();
-    }
+	std::future<int> operator()()
+	{
+		return x.get_future();
+	}
 
-    std::future<int> func(int)
-    {
-        return x.get_future();
-    }
+	std::future<int> func(int)
+	{
+		return x.get_future();
+	}
 
-    std::promise<int> x;
+	std::promise<int> x;
 };
 
-void func(std::vector<int> & v)
+void func(std::vector<int>& v)
 {
-    std::atomic<int> sum = 0;
-    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&sum](int x)
-        {
-            sum.fetch_add(x, std::memory_order_relaxed);
-        });
+	std::atomic<int> sum = 0;
+	std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&sum](int x)
+		{
+			sum.fetch_add(x, std::memory_order_relaxed);
+		});
 }
 
-TEST(test, test_func)
+TEST_CASE("test_func")
 {
-    using type = decltype(&test_t::func);
-    constexpr bool val5 = std::is_same_v<type, std::future<int>(test_t::*)(int)>;
+	using type = decltype(&test_t::func);
+	constexpr bool val5 = std::is_same_v<type, std::future<int>(test_t::*)(int)>;
 }
