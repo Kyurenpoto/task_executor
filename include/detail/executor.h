@@ -15,7 +15,11 @@ namespace task_executor
       forward push/pop, without ownership
     */
 
-    template<class T>
+    template<
+        class T,
+        class TaskDeque = task_deque,
+        class TimedTaskMap = timed_task_map
+    >
     struct executor_t :
         context_creator_t<executor_t<T>>
     {
@@ -34,9 +38,9 @@ namespace task_executor
         }
 
     private:
-        task_deque immediate;
-        std::array<timed_task_map*, cntTimeSlot> shortTerm;
-        std::array<timed_task_map*, cntTimeSlot> longTerm;
+        TaskDeque* immediate;
+        std::array<TimedTaskMap*, cntTimeSlot> shortTerm;
+        std::array<TimedTaskMap*, cntTimeSlot> longTerm;
     };
 
     // Facade struct that can use executor through inheritance

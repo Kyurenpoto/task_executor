@@ -13,28 +13,33 @@ namespace task_executor
         void timed_loop();
     }
 
+    template<
+        class TaskDeque = task_deque,
+        class TimedTaskMap = timed_task_map,
+        template<class> class ListDeque = crt_list_deque
+    >
     struct distributor_t
     {
-        void assignImmediate(task_deque* immediate)
+        void assignImmediate(TaskDeque* immediate)
         {
             immediates.pushBack(immediate);
         }
 
-        void assignShortTerm(timed_task_map* shortTerm, std::size_t idxSlot)
+        void assignShortTerm(TimedTaskMap* shortTerm, std::size_t idxSlot)
         {
             cntTotalTimedTask += 1;
 
             shortTerms[idxSlot].pushBack(shortTerm);
         }
 
-        void assignLongTerm(timed_task_map* longTerm, std::size_t idxSlot)
+        void assignLongTerm(TimedTaskMap* longTerm, std::size_t idxSlot)
         {
             cntTotalTimedTask += 1;
 
             longTerms[idxSlot].pushBack(longTerm);
         }
 
-        task_deque* takeImmediate()
+        TaskDeque* takeImmediate()
         {
             return immediates.isEmpty() ? nullptr : immediates.popFront();
         }
@@ -57,28 +62,28 @@ namespace task_executor
         }
 
     private:
-		void updateShortTerm(crt_list_deque<timed_task_map*>& deq)
+		void updateShortTerm(ListDeque<TimedTaskMap*>& deq)
 		{
 
 		}
 
-		void updateLongTerm(crt_list_deque<timed_task_map*>& deq)
+		void updateLongTerm(ListDeque<TimedTaskMap*>& deq)
 		{
 
 		}
 
-        crt_list_deque<task_deque*> immediates;
-        std::array<crt_list_deque<timed_task_map*>, cntTimeSlot> shortTerms;
-        std::array<crt_list_deque<timed_task_map*>, cntTimeSlot> longTerms;
+        ListDeque<TaskDeque*> immediates;
+        std::array<ListDeque<TimedTaskMap*>, cntTimeSlot> shortTerms;
+        std::array<ListDeque<TimedTaskMap*>, cntTimeSlot> longTerms;
         std::size_t idxUpdateLongTerm = 0;
         std::size_t cntTotalTimedTask = 0;
     };
 
     namespace detail
     {
-        distributor_t* getDistributor()
+        distributor_t<>* getDistributor()
         {
-            static distributor_t* distributor = new distributor_t;
+            static distributor_t<>* distributor = new distributor_t<>;
 
             return distributor;
         }
