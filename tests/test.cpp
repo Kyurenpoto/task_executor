@@ -48,3 +48,13 @@ TEST_CASE("test_func")
 	using type = decltype(&test_t::func);
 	constexpr bool val5 = std::is_same_v<type, std::future<int>(test_t::*)(int)>;
 }
+
+TEST_CASE("execute_executable_1")
+{
+    using namespace task_executor;
+
+    size_t cnt = 0;
+    executable_t<void()>{ [&cnt]() { ++cnt; } }();
+
+    REQUIRE(cnt == 1);
+}
