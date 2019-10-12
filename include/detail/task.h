@@ -56,21 +56,25 @@ namespace task_executor
         transmitter_t transmitter;
     };
 
-    template<class Ret, class... Args>
-    struct executable_t final :
+    template<class... Ts>
+    struct executable_t;
+
+    template<class Ret, class Arg, class... Args>
+    struct executable_t<Ret(Arg, Args...)> final :
         executable_base_t
     {
-        executable_t(std::function<Ret(Args...)> func) :
+        template<class Func>
+        executable_t(Func func) :
             exe{ func }
         {}
 
         template<std::size_t N, class T>
         void setArg(T&& value)
         {
-            static_assert(N < sizeof...(Args));
-            static_assert(std::is_convertible_v<T, nth_type_t<N, Args...>>);
+            static_assert(N < 1 + sizeof...(Args));
+            static_assert(std::is_convertible_v<T, nth_type_t<N, Arg, Args...>>);
 
-            args.get<N>() = static_cast<nth_type_t<N, Args...>>(value);
+            args.get<N>() = static_cast<nth_type_t<N, Arg, Args...>>(value);
         }
 
         const Ret& getRet() const
@@ -84,27 +88,28 @@ namespace task_executor
             ret = exe(args...);
         }
 
-        byte_stream<Args...> args;
+        byte_stream<Arg, Args...> args;
         byte_stream<Ret> ret;
-        std::function<Ret(Args...)> exe;
+        std::function<Ret(Arg, Args...)> exe;
         std::size_t cntReceptedArgs = 0;
     };
 
-    template<class... Args>
-    struct executable_t<void, Args...> final :
+    template<class Arg, class... Args>
+    struct executable_t<void(Arg, Args...)> final :
         executable_base_t
     {
-        executable_t(std::function<void(Args...)> func) :
+        template<class Func>
+        executable_t(Func func) :
             exe{ func }
         {}
 
         template<std::size_t N, class T>
         void setArg(T&& value)
         {
-            static_assert(N < sizeof...(Args));
-            static_assert(std::is_convertible_v<T, nth_type_t<N, Args...>>);
+            static_assert(N < 1 + sizeof...(Args));
+            static_assert(std::is_convertible_v<T, nth_type_t<N, Arg, Args...>>);
 
-            args.get<N>() = static_cast<nth_type_t<N, Args...>>(value);
+            args.get<N>() = static_cast<nth_type_t<N, Arg, Args...>>(value);
         }
 
     protected:
@@ -113,8 +118,52 @@ namespace task_executor
             exe(args...);
         }
 
-        byte_stream<Args...> args;
-        std::function<void(Args...)> exe;
+        byte_stream<Arg, Args...> args;
+        std::function<void(Arg, Args...)> exe;
+        std::size_t cntReceptedArgs = 0;
+    };
+
+    template<class Ret>
+    struct executable_t<Ret()> final :
+        executable_base_t
+    {
+        template<class Func>
+        executable_t(Func func) :
+            exe{ func }
+        {}
+
+        const Ret& getRet() const
+        {
+            return ret.get<0>();
+        }
+
+    private:
+        void execute() override
+        {
+            ret = exe();
+        }
+
+        byte_stream<Ret> ret;
+        std::function<Ret()> exe;
+        std::size_t cntReceptedArgs = 0;
+    };
+
+    template<>
+    struct executable_t<void()> final :
+        executable_base_t
+    {
+        template<class Func>
+        executable_t(Func func) :
+            exe{ func }
+        {}
+
+    private:
+        void execute() override
+        {
+            exe();
+        }
+
+        std::function<void()> exe;
         std::size_t cntReceptedArgs = 0;
     };
 
