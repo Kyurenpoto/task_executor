@@ -42,16 +42,31 @@ namespace task_executor
     {
         static_assert(sizeof...(Ts) > 0);
 
+        byte_stream() = default;
+
         template<std::size_t N>
-        auto& get()
+        nth_type_t<N, Ts...>& get()
         {
             if constexpr (N == 0)
             {
-                return reinterpret_cast<nth_type_t<0, Ts...>>(stream);
+                return *reinterpret_cast<nth_type_t<0, Ts...>*>(stream);
             }
             else
             {
-                return reinterpret_cast<nth_type_t<N, Ts...>>(stream + size_sum_v<N - 1, Ts...>);
+                return *reinterpret_cast<nth_type_t<N, Ts...>*>(stream + size_sum_v<N - 1, Ts...>);
+            }
+        }
+
+        template<std::size_t N>
+        const nth_type_t<N, Ts...>& get() const
+        {
+            if constexpr (N == 0)
+            {
+                return *reinterpret_cast<const nth_type_t<0, Ts...>*>(stream);
+            }
+            else
+            {
+                return *reinterpret_cast<const nth_type_t<N, Ts...>*>(stream + size_sum_v<N - 1, Ts...>);
             }
         }
 

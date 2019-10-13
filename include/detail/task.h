@@ -65,7 +65,7 @@ namespace task_executor
     {
         template<class Func>
         executable_t(Func func) :
-            exe{ func }
+            exe{ func }, args{}, ret{}
         {}
 
         template<std::size_t N, class T>
@@ -85,7 +85,13 @@ namespace task_executor
     private:
         void execute() override
         {
-            ret = exe(args...);
+            executeImpl(std::make_index_sequence<1 + sizeof...(Args)>{});
+        }
+
+        template<std::size_t... Ns>
+        void executeImpl(std::index_sequence<Ns...>)
+        {
+            ret.get<0>() = exe(args.get<Ns>()...);
         }
 
         byte_stream<Arg, Args...> args;
@@ -100,7 +106,7 @@ namespace task_executor
     {
         template<class Func>
         executable_t(Func func) :
-            exe{ func }
+            exe{ func }, args{}
         {}
 
         template<std::size_t N, class T>
@@ -115,7 +121,13 @@ namespace task_executor
     protected:
         void execute() override
         {
-            exe(args...);
+            executeImpl(std::make_index_sequence<1 + sizeof...(Args)>{});
+        }
+
+        template<std::size_t... Ns>
+        void executeImpl(std::index_sequence<Ns...>)
+        {
+            exe(args.get<Ns>()...);
         }
 
         byte_stream<Arg, Args...> args;
@@ -129,7 +141,7 @@ namespace task_executor
     {
         template<class Func>
         executable_t(Func func) :
-            exe{ func }
+            exe{ func }, ret{}
         {}
 
         const Ret& getRet() const
@@ -140,7 +152,7 @@ namespace task_executor
     private:
         void execute() override
         {
-            ret = exe();
+            ret.get<0>() = exe();
         }
 
         byte_stream<Ret> ret;
