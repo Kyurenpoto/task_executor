@@ -59,31 +59,11 @@ TEST_CASE("execute_executable")
         REQUIRE(flag == true);
     }
 
-    SUBCASE("member_no_args_no_ret")
-    {
-        Init();
-
-        executable_t<void()>{ []() { NoArgsNoRet(); } }();
-
-        REQUIRE(flag == true);
-    }
-
     SUBCASE("no_args_1_ret")
     {
         Init();
 
         executable_t<int()> x{ NoArgsOneRet };
-        x();
-        const int& res = x.getRet();
-
-        REQUIRE(res == 1);
-    }
-
-    SUBCASE("member_no_args_1_ret")
-    {
-        Init();
-
-        executable_t<int()> x{ []()->int { return NoArgsOneRet(); } };
         x();
         const int& res = x.getRet();
 
@@ -101,34 +81,11 @@ TEST_CASE("execute_executable")
         REQUIRE(val == 1);
     }
 
-    SUBCASE("member_1_args_no_ret")
-    {
-        Init();
-
-        executable_t<void(int)> x{ [](int a) { OneArgsNoRet(a); } };
-        x.setArg<0>(1);
-        x();
-
-        REQUIRE(val == 1);
-    }
-
     SUBCASE("2_args_no_ret")
     {
         Init();
 
         executable_t<void(int, int)> x{ TwoArgsNoRet };
-        x.setArg<0>(1);
-        x.setArg<1>(2);
-        x();
-
-        REQUIRE(val == 3);
-    }
-
-    SUBCASE("member_2_args_no_ret")
-    {
-        Init();
-
-        executable_t<void(int, int)> x{ [](int a, int b) { TwoArgsNoRet(a, b); } };
         x.setArg<0>(1);
         x.setArg<1>(2);
         x();
@@ -148,18 +105,6 @@ TEST_CASE("execute_executable")
         REQUIRE(ret == 1);
     }
 
-    SUBCASE("member_1_args_1_ret")
-    {
-        Init();
-
-        executable_t<int(int)> x{ [](int a)->int { return OneArgsOneRet(a); } };
-        x.setArg<0>(1);
-        x();
-        const int& ret = x.getRet();
-
-        REQUIRE(ret == 1);
-    }
-
     SUBCASE("2_args_1_ret")
     {
         Init();
@@ -172,8 +117,69 @@ TEST_CASE("execute_executable")
 
         REQUIRE(ret == 3);
     }
+}
 
-    SUBCASE("member_2_args_1_ret")
+TEST_CASE("execute_executable_with_member_functions")
+{
+    using namespace task_executor;
+    using namespace test_executable;
+
+    SUBCASE("no_args_no_ret")
+    {
+        Init();
+
+        executable_t<void()>{ []() { NoArgsNoRet(); } }();
+
+        REQUIRE(flag == true);
+    }
+
+    SUBCASE("no_args_1_ret")
+    {
+        Init();
+
+        executable_t<int()> x{ []()->int { return NoArgsOneRet(); } };
+        x();
+        const int& res = x.getRet();
+
+        REQUIRE(res == 1);
+    }
+
+    SUBCASE("1_args_no_ret")
+    {
+        Init();
+
+        executable_t<void(int)> x{ [](int a) { OneArgsNoRet(a); } };
+        x.setArg<0>(1);
+        x();
+
+        REQUIRE(val == 1);
+    }
+
+    SUBCASE("2_args_no_ret")
+    {
+        Init();
+
+        executable_t<void(int, int)> x{ [](int a, int b) { TwoArgsNoRet(a, b); } };
+        x.setArg<0>(1);
+        x.setArg<1>(2);
+        x();
+
+        REQUIRE(val == 3);
+    }
+
+    SUBCASE("1_args_1_ret")
+    {
+        Init();
+
+        executable_t<int(int)> x{ [](int a)->int { return OneArgsOneRet(a); } };
+        x.setArg<0>(1);
+        x();
+        const int& ret = x.getRet();
+
+        REQUIRE(ret == 1);
+    }
+
+    SUBCASE("2_args_1_ret")
     {
         Init();
 
