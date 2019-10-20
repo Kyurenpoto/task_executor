@@ -4,6 +4,7 @@
 #include <deque>
 #include <chrono>
 #include <functional>
+#include <bitset>
 
 #include "util.h"
 #include "byte_stream.h"
@@ -65,20 +66,25 @@ namespace task_executor
     {
         template<class Func>
         executable_t(Func func) :
-            exe{ func }, args{}, ret{}
+            exe{ func }, args{}, ret{}, checker{}
         {}
 
         template<std::size_t N, class T>
-        void setArg(T&& value)
+        void setArg(T&& value) noexcept
         {
             static_assert(N < 1 + sizeof...(Args));
             static_assert(std::is_convertible_v<T, nth_type_t<N, Arg, Args...>>);
 
             args.get<N>() = static_cast<nth_type_t<N, Arg, Args...>>(value);
+
+            checker.set(N + 1);
         }
 
         const Ret& getRet() const
         {
+            if (!checker.test(0))
+                throw std::logic_error{ "Return value not recorded" };
+
             return ret.get<0>();
         }
 
@@ -91,13 +97,19 @@ namespace task_executor
         template<std::size_t... Ns>
         void executeImpl(std::index_sequence<Ns...>)
         {
+            auto argChecker = checker | (std::bitset<sizeof...(Args) + 2>{1});
+            if (!argChecker.all())
+                throw std::logic_error{ "Some arguments not recorded" };
+
             ret.get<0>() = exe(args.get<Ns>()...);
+
+            checker.set(0);
         }
 
         byte_stream<Arg, Args...> args;
         byte_stream<Ret> ret;
+        std::bitset<sizeof...(Args) + 2> checker;
         std::function<Ret(Arg, Args...)> exe;
-        std::size_t cntReceptedArgs = 0;
     };
 
     template<class Arg, class... Args>
@@ -106,16 +118,18 @@ namespace task_executor
     {
         template<class Func>
         executable_t(Func func) :
-            exe{ func }, args{}
+            exe{ func }, args{}, checker{}
         {}
 
         template<std::size_t N, class T>
-        void setArg(T&& value)
+        void setArg(T&& value) noexcept
         {
             static_assert(N < 1 + sizeof...(Args));
             static_assert(std::is_convertible_v<T, nth_type_t<N, Arg, Args...>>);
 
             args.get<N>() = static_cast<nth_type_t<N, Arg, Args...>>(value);
+
+            checker.set(N);
         }
 
     protected:
@@ -127,12 +141,15 @@ namespace task_executor
         template<std::size_t... Ns>
         void executeImpl(std::index_sequence<Ns...>)
         {
+            if (!checker.all())
+                throw std::logic_error{ "Some arguments not recorded" };
+
             exe(args.get<Ns>()...);
         }
 
         byte_stream<Arg, Args...> args;
+        std::bitset<sizeof...(Args) + 1> checker;
         std::function<void(Arg, Args...)> exe;
-        std::size_t cntReceptedArgs = 0;
     };
 
     template<class Ret>
@@ -141,11 +158,14 @@ namespace task_executor
     {
         template<class Func>
         executable_t(Func func) :
-            exe{ func }, ret{}
+            exe{ func }, ret{}, checker{}
         {}
 
         const Ret& getRet() const
         {
+            if (!checker.test(0))
+                throw std::logic_error{ "Return value not recorded" };
+
             return ret.get<0>();
         }
 
@@ -153,11 +173,13 @@ namespace task_executor
         void execute() override
         {
             ret.get<0>() = exe();
+
+            checker.set(0);
         }
 
         byte_stream<Ret> ret;
+        std::bitset<1> checker;
         std::function<Ret()> exe;
-        std::size_t cntReceptedArgs = 0;
     };
 
     template<>
@@ -176,7 +198,6 @@ namespace task_executor
         }
 
         std::function<void()> exe;
-        std::size_t cntReceptedArgs = 0;
     };
 
     enum class action_t
