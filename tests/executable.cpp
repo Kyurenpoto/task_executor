@@ -70,6 +70,15 @@ TEST_CASE("execute_executable")
         REQUIRE(res == 1);
     }
 
+    SUBCASE("throw_no_args_1_ret")
+    {
+        Init();
+
+        executable_t<int()> x{ NoArgsOneRet };
+
+        REQUIRE_THROWS_AS(x.getRet(), const std::logic_error&);
+    }
+
     SUBCASE("1_args_no_ret")
     {
         Init();
@@ -191,4 +200,122 @@ TEST_CASE("execute_executable_with_member_functions")
 
         REQUIRE(ret == 3);
     }
+}
+
+TEST_CASE("execute_executable_with_throw")
+{
+    using namespace task_executor;
+    using namespace test_executable;
+
+    SUBCASE("no_args_1_ret")
+    {
+        Init();
+
+        executable_t<int()> x{ NoArgsOneRet };
+
+        REQUIRE_THROWS_AS(x.getRet(), const std::logic_error&);
+    }
+
+    SUBCASE("1_args_no_ret")
+    {
+        Init();
+
+        executable_t<void(int)> x{ OneArgsNoRet };
+
+        REQUIRE_THROWS_AS(x(), const std::logic_error&);
+    }
+
+    SUBCASE("2_args_no_ret_unset_0")
+    {
+        Init();
+
+        executable_t<void(int, int)> x{ TwoArgsNoRet };
+        x.setArg<1>(2);
+
+        REQUIRE_THROWS_AS(x(), const std::logic_error&);
+    }
+
+    SUBCASE("2_args_no_ret_unset_1")
+    {
+        Init();
+
+        executable_t<void(int, int)> x{ TwoArgsNoRet };
+        x.setArg<0>(1);
+        
+        REQUIRE_THROWS_AS(x(), const std::logic_error&);
+    }
+
+    SUBCASE("2_args_no_ret_unset_all")
+    {
+        Init();
+
+        executable_t<void(int, int)> x{ TwoArgsNoRet };
+
+        REQUIRE_THROWS_AS(x(), const std::logic_error&);
+    }
+
+    SUBCASE("1_args_1_ret_unset_ret")
+    {
+        Init();
+
+        executable_t<int(int)> x{ OneArgsOneRet };
+        x.setArg<0>(1);
+
+        REQUIRE_THROWS_AS(x.getRet(), const std::logic_error&);
+    }
+
+    SUBCASE("1_args_1_ret_unset_arg")
+    {
+        Init();
+
+        executable_t<int(int)> x{ OneArgsOneRet };
+
+        REQUIRE_THROWS_AS(x(), const std::logic_error&);
+    }
+
+    SUBCASE("2_args_1_ret_unset_ret")
+    {
+        Init();
+
+        executable_t<int(int, int)> x{ TwoArgsOneRet };
+        x.setArg<0>(1);
+        x.setArg<1>(2);
+
+        REQUIRE_THROWS_AS(x.getRet(), const std::logic_error&);
+    }
+
+    SUBCASE("2_args_1_ret_unset_arg_1")
+    {
+        Init();
+
+        executable_t<int(int, int)> x{ TwoArgsOneRet };
+        x.setArg<1>(2);
+
+        REQUIRE_THROWS_AS(x(), const std::logic_error&);
+    }
+
+    SUBCASE("2_args_1_ret_unset_arg_2")
+    {
+        Init();
+
+        executable_t<int(int, int)> x{ TwoArgsOneRet };
+        x.setArg<0>(1);
+
+        REQUIRE_THROWS_AS(x(), const std::logic_error&);
+    }
+
+    SUBCASE("2_args_1_ret_unset_arg_all")
+    {
+        Init();
+
+        executable_t<int(int, int)> x{ TwoArgsOneRet };
+
+        REQUIRE_THROWS_AS(x(), const std::logic_error&);
+    }
+}
+
+TEST_CASE("execute_executable_with_transmitter")
+{
+    using namespace task_executor;
+    using namespace test_executable;
 }
