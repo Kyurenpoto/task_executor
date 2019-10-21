@@ -318,4 +318,22 @@ TEST_CASE("execute_executable_with_transmitter")
 {
     using namespace task_executor;
     using namespace test_executable;
+
+	SUBCASE("1_pre_1_post_1_raw_arg")
+	{
+		executable_t<int()> x{ []()->int { return 1; } };
+		executable_t<void(int)> y{ [](int)->void {} };
+
+		transmit_func f{ [](executable_base_t* a, executable_base_t* b)->void {
+			executable_t<int()>* realA = static_cast<executable_t<int()>*>(a);
+			executable_t<void(int)>* realB = static_cast<executable_t<void(int)>*>(b);
+
+			realB->setArg<0>(realA->getRet());
+		} };
+
+		x.link(&y, f);
+		x();
+		
+		REQUIRE_NOTHROW(y());
+	}
 }
