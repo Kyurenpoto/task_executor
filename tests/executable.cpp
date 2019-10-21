@@ -336,4 +336,128 @@ TEST_CASE("execute_executable_with_transmitter")
 		
 		REQUIRE_NOTHROW(y());
 	}
+
+    SUBCASE("1_pre_1_post_1_convert_arg")
+    {
+        int val = 0;
+
+        executable_t<std::pair<int, int>()> x{ []()->std::pair<int, int> { return {1, 2}; } };
+        executable_t<void(int)> y{ [&val](int a)->void { val = a; } };
+
+        transmit_func f{ [](executable_base_t* a, executable_base_t* b)->void {
+            executable_t<std::pair<int, int>()>* realA = static_cast<executable_t<std::pair<int, int>()>*>(a);
+            executable_t<void(int)>* realB = static_cast<executable_t<void(int)>*>(b);
+
+            realB->setArg<0>(realA->getRet().first);
+        } };
+
+        x.link(&y, f);
+        x();
+
+        REQUIRE_NOTHROW(y());
+        
+        REQUIRE(val == 1);
+    }
+
+    SUBCASE("2_pre_1_post")
+    {
+        executable_t<int()> x{ []()->int { return 1; } };
+        executable_t<int()> y{ []()->int { return 1; } };
+        executable_t<void(int, int)> z{ [](int, int)->void {} };
+
+        x.link(&z, transmit_func{ [](executable_base_t* a, executable_base_t* b)->void {
+            executable_t<int()>* realA = static_cast<executable_t<int()>*>(a);
+            executable_t<void(int, int)>* realB = static_cast<executable_t<void(int, int)>*>(b);
+
+            realB->setArg<0>(realA->getRet());
+        } });
+        y.link(&z, transmit_func{ [](executable_base_t* a, executable_base_t* b)->void {
+            executable_t<int()>* realA = static_cast<executable_t<int()>*>(a);
+            executable_t<void(int, int)>* realB = static_cast<executable_t<void(int, int)>*>(b);
+
+            realB->setArg<1>(realA->getRet());
+        } });
+        
+        x();
+        y();
+
+        REQUIRE_NOTHROW(z());
+    }
+
+    SUBCASE("1_pre_2_post")
+    {
+        executable_t<std::pair<int, int>()> x{ []()->std::pair<int, int> { return {1, 2}; } };
+        executable_t<void(int)> y{ [](int)->void {} };
+        executable_t<void(int)> z{ [](int)->void {} };
+
+        x.link(&y, transmit_func{ [](executable_base_t* a, executable_base_t* b)->void {
+            executable_t<std::pair<int, int>()>* realA = static_cast<executable_t<std::pair<int, int>()>*>(a);
+            executable_t<void(int)>* realB = static_cast<executable_t<void(int)>*>(b);
+
+            realB->setArg<0>(realA->getRet().first);
+        } });
+        x.link(&z, transmit_func{ [](executable_base_t* a, executable_base_t* b)->void {
+            executable_t<std::pair<int, int>()>* realA = static_cast<executable_t<std::pair<int, int>()>*>(a);
+            executable_t<void(int)>* realB = static_cast<executable_t<void(int)>*>(b);
+
+            realB->setArg<0>(realA->getRet().second);
+        } });
+
+        x();
+
+        REQUIRE_NOTHROW(y());
+
+        REQUIRE_NOTHROW(z());
+    }
+
+    SUBCASE("2_pre_2_post")
+    {
+        executable_t<std::pair<int, int>()> u{ []()->std::pair<int, int> { return {1, 2}; } };
+        executable_t<std::pair<int, int>()> v{ []()->std::pair<int, int> { return {1, 2}; } };
+        executable_t<void(int, int)> x{ [](int, int)->void {} };
+        executable_t<void(int, int)> y{ [](int, int)->void {} };
+
+        u.link(&x, transmit_func{ [](executable_base_t* a, executable_base_t* b)->void {
+            executable_t<std::pair<int, int>()>* realA = static_cast<executable_t<std::pair<int, int>()>*>(a);
+            executable_t<void(int, int)>* realB = static_cast<executable_t<void(int, int)>*>(b);
+
+            realB->setArg<0>(realA->getRet().first);
+        } });
+        u.link(&y, transmit_func{ [](executable_base_t* a, executable_base_t* b)->void {
+            executable_t<std::pair<int, int>()>* realA = static_cast<executable_t<std::pair<int, int>()>*>(a);
+            executable_t<void(int, int)>* realB = static_cast<executable_t<void(int, int)>*>(b);
+
+            realB->setArg<0>(realA->getRet().second);
+        } });
+        v.link(&x, transmit_func{ [](executable_base_t* a, executable_base_t* b)->void {
+            executable_t<std::pair<int, int>()>* realA = static_cast<executable_t<std::pair<int, int>()>*>(a);
+            executable_t<void(int, int)>* realB = static_cast<executable_t<void(int, int)>*>(b);
+
+            realB->setArg<1>(realA->getRet().first);
+        } });
+        v.link(&y, transmit_func{ [](executable_base_t* a, executable_base_t* b)->void {
+            executable_t<std::pair<int, int>()>* realA = static_cast<executable_t<std::pair<int, int>()>*>(a);
+            executable_t<void(int, int)>* realB = static_cast<executable_t<void(int, int)>*>(b);
+
+            realB->setArg<1>(realA->getRet().second);
+        } });
+
+        u();
+        v();
+
+        REQUIRE_NOTHROW(x());
+
+        REQUIRE_NOTHROW(y());
+    }
 }
+
+TEST_CASE("execute_executable_with_transmitter_multi_thread")
+{
+    using namespace task_executor;
+    using namespace test_executable;
+
+    SUBCASE("")
+    {
+    }
+}
+
