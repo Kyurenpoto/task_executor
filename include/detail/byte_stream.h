@@ -8,7 +8,8 @@ namespace task_executor
     {
         static_assert(N < 1 + sizeof...(Ts));
 
-        static constexpr std::size_t value = sizeof(T) + size_sum<N - 1, Ts...>::value;
+        static constexpr std::size_t value =
+            sizeof(T) + size_sum<N - 1, Ts...>::value;
     };
 
     template<class T, class... Ts>
@@ -45,29 +46,33 @@ namespace task_executor
         byte_stream() = default;
 
         template<std::size_t N>
-        nth_type_t<N, Ts...>& get()
-        {
-            if constexpr (N == 0)
-            {
-                return *reinterpret_cast<nth_type_t<0, Ts...>*>(stream);
-            }
-            else
-            {
-                return *reinterpret_cast<nth_type_t<N, Ts...>*>(stream + size_sum_v<N - 1, Ts...>);
-            }
-        }
-
-        template<std::size_t N>
         const nth_type_t<N, Ts...>& get() const
         {
-            if constexpr (N == 0)
-            {
-                return *reinterpret_cast<const nth_type_t<0, Ts...>*>(stream);
-            }
-            else
-            {
-                return *reinterpret_cast<const nth_type_t<N, Ts...>*>(stream + size_sum_v<N - 1, Ts...>);
-            }
+            static_assert(N < sizeof...(Ts));
+
+            size_t offset = 0;
+
+            if constexpr (N != 0)
+                offset = size_sum_v<N - 1, Ts...>;
+
+            return *reinterpret_cast<const nth_type_t<N, Ts...>*>(
+                stream + offset);
+        }
+
+        template<std::size_t N, class T>
+        void set(T && value)
+        {
+            static_assert(N < sizeof...(Ts));
+            static_assert(std::is_convertible_v<T, nth_type_t<N, Ts...>>);
+
+            size_t offset = 0;
+
+            if constexpr (N != 0)
+                offset = size_sum_v<N - 1, Ts...>;
+
+            nth_type_t<N, Ts...>& ref =
+                *reinterpret_cast<nth_type_t<N, Ts...>*>(stream + offset);
+            ref = static_cast<nth_type_t<N, Ts...>>(value);
         }
 
     private:

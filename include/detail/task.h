@@ -72,10 +72,7 @@ namespace task_executor
         template<std::size_t N, class T>
         void setArg(T&& value) noexcept
         {
-            static_assert(N < 1 + sizeof...(Args));
-            static_assert(std::is_convertible_v<T, nth_type_t<N, Arg, Args...>>);
-
-            args.get<N>() = static_cast<nth_type_t<N, Arg, Args...>>(value);
+            args.set<N>(value);
 
             checker.set(N + 1);
         }
@@ -101,7 +98,7 @@ namespace task_executor
             if (!argChecker.all())
                 throw std::logic_error{ "Some arguments not recorded" };
 
-            ret.get<0>() = exe(args.get<Ns>()...);
+            ret.set<0>(exe(args.get<Ns>()...));
 
             checker.set(0);
         }
@@ -124,10 +121,7 @@ namespace task_executor
         template<std::size_t N, class T>
         void setArg(T&& value) noexcept
         {
-            static_assert(N < 1 + sizeof...(Args));
-            static_assert(std::is_convertible_v<T, nth_type_t<N, Arg, Args...>>);
-
-            args.get<N>() = static_cast<nth_type_t<N, Arg, Args...>>(value);
+            args.set<N>(value);
 
             checker.set(N);
         }
@@ -172,7 +166,7 @@ namespace task_executor
     private:
         void execute() override
         {
-            ret.get<0>() = exe();
+            ret.set<0>(exe());
 
             checker.set(0);
         }
