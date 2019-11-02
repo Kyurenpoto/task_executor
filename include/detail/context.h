@@ -11,13 +11,13 @@ namespace task_executor
         void addPrior(std::initializer_list<context_t*> contexts)
         {
             for (auto x : contexts)
-                x->task->arrPostrior.push_back(task);
+                x->task->arrPosterior.push_back(task);
         }
 
         void addPostrior(std::initializer_list<context_t*> contexts)
         {
             for (auto x : contexts)
-                task->arrPostrior.push_back(x->task);
+                task->arrPosterior.push_back(x->task);
         }
 
         const executable_base_t* getExecutable() const

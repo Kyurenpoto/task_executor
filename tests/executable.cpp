@@ -609,14 +609,3 @@ TEST_CASE("execute_executable_with_transmitter_multi_thread")
         REQUIRE_NOTHROW(v());
     }
 }
-
-
-TEST_CASE("execute_executable_with_transmitter_multi_thread")
-{
-    using namespace task_executor;
-    using namespace test_executable;
-
-    SUBCASE("2_context_transmit_args_2_executable")
-    {
-    }
-}

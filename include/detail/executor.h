@@ -30,11 +30,16 @@ namespace task_executor
                 x->release(this);
         }
 
-        // push & execute
         template<class Task>
-        void assign(Task* task)
+        void assign_front(Task* task)
         {
-            getConcrete<T&>(*this).assign(task);
+            getConcrete<T&>(*this).assign_front(task);
+        }
+
+        template<class Task>
+        void assign_back(Task* task)
+        {
+            getConcrete<T&>(*this).assign_back(task);
         }
 
     private:
