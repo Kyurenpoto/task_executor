@@ -3,6 +3,7 @@
 #include <deque>
 #include <chrono>
 
+#include "thread_local.h"
 #include "executable.h"
 
 namespace task_executor
@@ -57,6 +58,11 @@ namespace task_executor
         void defer(Executor& executor)
         {
             // defer = graph pop -> local deque push back
+
+            executor.assign_back(this);
+
+            if (isSameObj(thread_local_t::currentExecutor, &executor))
+                executor.flush();
         }
 
         template<class Executor>
@@ -64,7 +70,18 @@ namespace task_executor
         {
             // graph pop -> local deque push front
 
+            if (thread_local_t::currentExecutor != nullptr &&
+                !isSameObj(thread_local_t::currentExecutor, &executor))
+                throw std::logic_error{ "External dispatch operations are"
+                " only allowed from the system executor" };
+
+            executor_base_t* tmp = thread_local_t::currentExecutor;
+            thread_local_t::currentExecutor = &executor;
+
             executor.assign_front(this);
+            executor.flush();
+
+            thread_local_t::currentExecutor = tmp;
         }
     };
 }

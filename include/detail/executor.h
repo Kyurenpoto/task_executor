@@ -10,6 +10,12 @@
 
 namespace task_executor
 {
+    struct executor_base_t :
+        context_creator_t<executor_base_t>
+    {
+
+    };
+
     /*
       backward push/pop, basically
       forward push/pop, without ownership
@@ -21,7 +27,7 @@ namespace task_executor
         class TimedTaskMap = timed_task_map
     >
     struct executor_t :
-        context_creator_t<executor_t<T>>
+        executor_base_t
     {
         template<class Context>
         void release(std::initializer_list<Context*> contexts)
@@ -40,6 +46,11 @@ namespace task_executor
         void assign_back(Task* task)
         {
             getConcrete<T&>(*this).assign_back(task);
+        }
+
+        void flush()
+        {
+            getConcrete<T&>(*this).flush();
         }
 
     private:

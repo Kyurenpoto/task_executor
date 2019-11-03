@@ -13,5 +13,12 @@ namespace task_executor
         {
 
         }
+
+        static system_executor_t& get()
+        {
+            static system_executor_t systemExecutor;
+
+            return systemExecutor;
+        }
     };
 }
