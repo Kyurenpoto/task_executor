@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <array>
+#include <optional>
 
 #include "util.h"
 
@@ -94,39 +95,26 @@ namespace task_executor
     template<class T>
     struct lock_free_list_deque
     {
-        void pushBack(T data)
+        template<class U>
+        void pushBack(U && data)
         {
 
         }
 
-        void pushFront(T data)
+        template<class U> 
+        void pushFront(U && data)
         {
 
         }
 
-        T popBack()
+        std::optional<T> popBack()
         {
-
+            return std::nullopt;
         }
 
-        T popFront()
+        std::optional<T> popFront()
         {
-
-        }
-
-        T& getBack()
-        {
-            return nullptr;
-        }
-
-        T& getFront()
-        {
-            return nullptr;
-        }
-
-        bool isEmpty()
-        {
-            return false;
+            return std::nullopt;
         }
     };
 

@@ -161,12 +161,106 @@ TEST_CASE("execute_task")
         b.executable = &y;
 
         REQUIRE_NOTHROW(a.act(e1, action_t::DISPATCH));
+        
+        e2.flush();
     }
+}
+
+namespace test_task
+{
+    struct tmp_executor_lock_free :
+        task_executor::executor_base_t
+    {
+        void assign_front(task_executor::task_t* task)
+        {
+            taskDeq.pushFront(task);
+        }
+
+        void assign_back(task_executor::task_t* task)
+        {
+            taskDeq.pushBack(task);
+        }
+
+        void flush()
+        {
+            if (isFlushing.load())
+            {
+                flushStealer();
+                return;
+            }
+
+            isFlushing.store(true);
+
+            flushOwner();
+
+            isFlushing.store(false);
+        }
+
+        void flushOwner()
+        {
+            while (true)
+            {
+                std::optional<task_executor::task_t*> task = taskDeq.popFront();
+                if (!task)
+                    break;
+
+                executeTask(task.value());
+            }
+        }
+
+        void flushStealer()
+        {
+            std::optional<task_executor::task_t*> task = taskDeq.popFront();
+            if (task)
+                executeTask(task.value());
+        }
+
+        void executeTask(task_executor::task_t* task)
+        {
+            (*(task->executable))();
+
+            for (auto next : task->arrPosterior)
+                next->cntPrior.fetch_sub(1);
+        }
+
+        task_executor::crt_list_deque<task_executor::task_t*> taskDeq;
+        std::atomic_bool isFlushing = false;
+    };
 }
 
 TEST_CASE("execute_task_with_multi_thread")
 {
     using namespace task_executor;
+
+    SUBCASE("1_executor_2_thread_1_task_dispatch")
+    {
+
+    }
+
+    SUBCASE("1_executor_2_thread_2_task_dispatch")
+    {
+
+    }
+
+    SUBCASE("1_executor_2_thread_2_task_defer")
+    {
+
+    }
+
+    SUBCASE("1_executor_2_thread_many_task_dispatch")
+    {
+
+    }
+
+    SUBCASE("2_executor_2_thread_1_task_respectively_dispatch")
+    {
+
+    }
+
+    SUBCASE("2_executor_2_thread_1_task_2_task_dispatch")
+    {
+
+    }
 
     SUBCASE("")
     {
