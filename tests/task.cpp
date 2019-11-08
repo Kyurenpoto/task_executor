@@ -231,10 +231,47 @@ namespace test_task
 TEST_CASE("execute_task_with_multi_thread")
 {
     using namespace task_executor;
+    using namespace test_task;
 
     SUBCASE("1_executor_2_thread_1_context_dispatch")
     {
+        task_t a, b;
+        a.isReleased.store(true);
+        b.isReleased.store(true);
+        a.arrPosterior.push_back(&b);
+        b.cntPrior.fetch_add(1);
 
+        bool flag1 = false, flag2 = false;
+        executable_t<void()> x{ [&flag1]()->void { flag1 = true; } },
+            y{ [&flag2]()->void { flag2 = true; } };
+        a.executable = &x;
+        b.executable = &y;
+
+        tmp_executor_lock_free e;
+
+        std::atomic_bool stopper = false;
+
+        std::thread t1{ [&e, &a, &b](){
+            thread_local_t::currentExecutor = nullptr;
+
+            a.act(e, action_t::DISPATCH);
+            b.act(e, action_t::DISPATCH);
+        } };
+
+        std::thread t2{ [&e, &a, &b, &stopper]() {
+            thread_local_t::currentExecutor = nullptr;
+
+            while (!stopper.load())
+                e.flush();
+        } };
+
+        stopper.store(true);
+
+        t1.join();
+        t2.join();
+
+        REQUIRE(flag1 == true);
+        REQUIRE(flag2 == true);
     }
 
     SUBCASE("1_executor_2_thread_2_context_dispatch")

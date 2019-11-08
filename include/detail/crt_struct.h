@@ -5,12 +5,19 @@
 #include <optional>
 
 #include "util.h"
+#include "crt_base.h"
 
 namespace task_executor
 {
     template<class T>
     struct lock_free_list
     {
+        struct node
+        {
+            std::atomic<node*> next = nullptr;
+            std::atomic<node*> prev = nullptr;
+        };
+
         void pushBack(T data)
         {
 
@@ -21,29 +28,14 @@ namespace task_executor
 
         }
 
-        T popBack()
+        std::optional<T> popBack()
         {
-
+            return std::nullopt;
         }
 
-        T popFront()
+        std::optional<T> popFront()
         {
-            
-        }
-
-        T& getBack()
-        {
-            return nullptr;
-        }
-
-        T& getFront()
-        {
-            return nullptr;
-        }
-
-        bool isEmpty()
-        {
-            return false;
+            return std::nullopt;
         }
     };
 
@@ -60,29 +52,14 @@ namespace task_executor
 
         }
 
-        T popBack()
+        std::optional<T> popBack()
         {
-
+            return std::nullopt;
         }
 
-        T popFront()
+        std::optional<T> popFront()
         {
-
-        }
-
-        T& getBack()
-        {
-            return nullptr;
-        }
-
-        T& getFront()
-        {
-            return nullptr;
-        }
-
-        bool isEmpty()
-        {
-            return false;
+            return std::nullopt;
         }
     };
 
@@ -98,13 +75,11 @@ namespace task_executor
         template<class U>
         void pushBack(U && data)
         {
-
         }
 
         template<class U> 
         void pushFront(U && data)
         {
-
         }
 
         std::optional<T> popBack()
