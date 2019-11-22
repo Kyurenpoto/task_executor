@@ -1,3 +1,8 @@
+/*
+ * Algorithms were written referring to this paper:
+ * ¡°A Practical Multi-Word Compare-and-Swap Operation¡± by Timothy L. Harris, Keir Fraser, and Ian A. Pratt
+ */
+
 #pragma once
 
 #include <cstddef>
