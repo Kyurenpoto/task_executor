@@ -5,7 +5,7 @@
 #include <optional>
 
 #include "util.h"
-#include "crt_base.h"
+#include "crt_extend.h"
 
 namespace task_executor
 {
@@ -39,7 +39,7 @@ namespace task_executor
         }
     };
 
-    template<class T>
+    template<class T, size_t N>
     struct lock_free_fixed_deque
     {
         void pushBack(T data)
@@ -61,13 +61,17 @@ namespace task_executor
         {
             return std::nullopt;
         }
+
+    private:
+        atomic_ext front, back;
+        alignas(sizeof(size_t)) std::array<T, N> arr;
     };
 
     template<class T>
     using crt_list = lock_free_list<T>;
 
-    template<class T>
-    using crt_fixed_deque = lock_free_fixed_deque<T>;
+    template<class T, size_t N>
+    using crt_fixed_deque = lock_free_fixed_deque<T, N>;
 
     template<class T>
     struct lock_free_list_deque
