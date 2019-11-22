@@ -7,10 +7,10 @@ namespace task_executor
 {
     enum class value_status_t : size_t
     {
-        NORMAL = 0x000,
-        RDCSS = 0x001,
-        DCAS = 0x010,
-        UNDECIDED = 0x100,
+        NORMAL = 0,
+        RDCSS = 1,
+        DCAS = 2,
+        UNDECIDED = 3,
     };
 
     enum class dcas_status_t : size_t
