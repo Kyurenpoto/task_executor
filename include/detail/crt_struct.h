@@ -5,7 +5,7 @@
 #include <optional>
 
 #include "util.h"
-#include "crt_extend.h"
+#include "dcas.h"
 
 namespace task_executor
 {
@@ -63,7 +63,7 @@ namespace task_executor
         }
 
     private:
-        atomic_ext front, back;
+        lockfree_op::atomic_ext front, back;
         alignas(sizeof(size_t)) std::array<T, N> arr;
     };
 
