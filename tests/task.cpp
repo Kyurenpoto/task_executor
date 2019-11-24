@@ -249,23 +249,18 @@ TEST_CASE("execute_task_with_multi_thread")
 
         tmp_executor_lock_free e;
 
-        std::atomic_bool stopper = false;
-
         std::thread t1{ [&e, &a, &b](){
             thread_local_t::currentExecutor = nullptr;
 
             a.act(e, action_t::DISPATCH);
-            b.act(e, action_t::DISPATCH);
         } };
 
-        std::thread t2{ [&e, &a, &b, &stopper]() {
+        std::thread t2{ [&e, &a, &b]() {
             thread_local_t::currentExecutor = nullptr;
 
-            while (!stopper.load())
-                e.flush();
+            while (b.cntPrior.load() != 0);
+            b.act(e, action_t::DISPATCH);
         } };
-
-        stopper.store(true);
 
         t1.join();
         t2.join();
