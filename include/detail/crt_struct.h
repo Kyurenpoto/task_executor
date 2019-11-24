@@ -20,7 +20,7 @@ namespace task_executor
 
         void pushBack(T data)
         {
-
+            
         }
 
         void pushFront(T data)
@@ -44,27 +44,105 @@ namespace task_executor
     {
         void pushBack(T data)
         {
+            std::array<lockfree_op::cas_requirement, 2> requirements =
+                createRequirements();
+            size_t& oldFront = requirements[0].expectedValue;
+            size_t& oldBack = requirements[1].expectedValue;
+            do
+            {
+                if (isOverflow(oldFront, oldBack))
+                    continue;
 
+                requirements[0].newValue = oldFront;
+                requirements[1].newValue = (oldBack + 1) % N;
+            } while (!lockfree_op::dcas(requirements));
+
+            arr[oldBack] = data;
         }
 
         void pushFront(T data)
         {
+            std::array<lockfree_op::cas_requirement, 2> requirements =
+                createRequirements();
+            size_t& oldFront = requirements[0].expectedValue;
+            size_t& oldBack = requirements[1].expectedValue;
+            do
+            {
+                if (isOverflow(oldFront, oldBack))
+                    continue;
 
+                requirements[0].newValue = (oldFront + N - 1) % N;
+                requirements[1].newValue = oldBack;
+            } while (!lockfree_op::dcas(requirements));
+
+            arr[oldFront] = data;
         }
 
         std::optional<T> popBack()
         {
-            return std::nullopt;
+            std::array<lockfree_op::cas_requirement, 2> requirements =
+                createRequirements();
+            size_t& oldFront = requirements[0].expectedValue;
+            size_t& oldBack = requirements[1].expectedValue;
+            do
+            {
+                if (isUnderflow(oldFront, oldBack))
+                    return std::nullopt;
+
+                requirements[0].newValue = oldFront;
+                requirements[1].newValue = (oldBack + N - 1) % N;
+            } while (!lockfree_op::dcas(requirements));
+
+            return std::optional<T>{ arr[(oldBack + N - 1) % N] };
         }
 
         std::optional<T> popFront()
         {
-            return std::nullopt;
+            std::array<lockfree_op::cas_requirement, 2> requirements =
+                createRequirements();
+            size_t& oldFront = requirements[0].expectedValue;
+            size_t& oldBack = requirements[1].expectedValue;
+            do
+            {
+                if (isUnderflow(oldFront, oldBack))
+                    return std::nullopt;
+
+                requirements[0].newValue = (oldFront + 1) % N;
+                requirements[1].newValue = oldBack;
+            } while (!lockfree_op::dcas(requirements));
+
+            return std::optional<T>{ arr[(oldFront + 1) % N] };
         }
 
     private:
         lockfree_op::atomic_ext front, back;
         alignas(sizeof(size_t)) std::array<T, N> arr;
+
+        std::array<lockfree_op::cas_requirement, 2> createRequirements()
+        {
+            size_t oldFront = front.value.load(), oldBack = back.value.load();
+
+            std::array<lockfree_op::cas_requirement, 2> requirements{
+                lockfree_op::cas_requirement{
+                .atom = front, .expectedValue = oldFront, .newValue = oldFront },
+                lockfree_op::cas_requirement{
+                .atom = back, .expectedValue = oldBack, .newValue = oldBack }
+            };
+
+            lockfree_op::dcas(requirements);
+
+            return requirements;
+        }
+
+        bool isOverflow(size_t oldFront, size_t oldBack)
+        {
+            return oldFront - oldBack == 1 || oldBack - oldFront == N - 1;
+        }
+
+        bool isUnderflow(size_t oldFront, size_t oldBack)
+        {
+            return oldFront == oldBack;
+        }
     };
 
     template<class T>

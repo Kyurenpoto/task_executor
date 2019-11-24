@@ -223,7 +223,7 @@ namespace test_task
                 next->cntPrior.fetch_sub(1);
         }
 
-        task_executor::crt_list_deque<task_executor::task_t*> taskDeq;
+        task_executor::crt_fixed_deque<task_executor::task_t*, 5> taskDeq;
         std::atomic_bool isFlushing = false;
     };
 }
