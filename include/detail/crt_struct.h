@@ -42,6 +42,12 @@ namespace task_executor
     template<class T, size_t N>
     struct lock_free_fixed_deque
     {
+        lock_free_fixed_deque()
+        {
+            if constexpr (std::is_pointer_v<T>)
+                arr.fill(nullptr);
+        }
+
         void pushBack(T data)
         {
             std::array<lockfree_op::cas_requirement, 2> requirements =
@@ -114,9 +120,27 @@ namespace task_executor
             return std::optional<T>{ arr[(oldFront + 1) % N] };
         }
 
+        bool isEmpty()
+        {
+            auto requirements = createRequirements();
+            size_t& oldFront = requirements[0].expectedValue;
+            size_t& oldBack = requirements[1].expectedValue;
+
+            return isUnderflow(oldFront, oldBack);
+        }
+
+        bool isFull()
+        {
+            auto requirements = createRequirements();
+            size_t& oldFront = requirements[0].expectedValue;
+            size_t& oldBack = requirements[1].expectedValue;
+
+            return isOverflow(oldFront, oldBack);
+        }
+
     private:
         lockfree_op::atomic_ext front, back;
-        alignas(sizeof(size_t)) std::array<T, N> arr;
+        std::array<T, N> arr;
 
         std::array<lockfree_op::cas_requirement, 2> createRequirements()
         {

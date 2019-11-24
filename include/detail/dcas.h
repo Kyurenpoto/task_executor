@@ -53,34 +53,57 @@ namespace task_executor
             return captured.status == value_status_t::DCAS;
         }
 
-        void complete(dcas_descriptor& descriptor)
+        void applyRequirement(
+            dcas_descriptor& descriptor,
+            cas_requirement& requirement,
+            bool successed)
         {
-            bool successed =
-                (descriptor.status.load() == dcas_status_t::SUCCESSED);
+            size_t assignValue =
+                (successed ? requirement.newValue : requirement.expectedValue);
 
-            for (auto i : descriptor.order)
+            while (true)
             {
-                cas_requirement& requirement = descriptor.requirements[i];
                 atomic_captured old = cas1(requirement.atom,
                     detail::toSizeT(&descriptor), value_status_t::DCAS,
-                    (successed ? requirement.newValue : requirement.expectedValue),
-                    value_status_t::NORMAL);
+                    assignValue, value_status_t::NORMAL);
 
                 if (isRdcssDescriptor(old))
-                    requirement.expectedValue =
-                    detail::toRdcssDescriptor(old.value)->expected2;
+                {
+                    rdcss_descriptor* oldDescriptor =
+                        detail::toRdcssDescriptor(old.value);
+                    if (oldDescriptor == nullptr)
+                        continue;
+
+                    requirement.expectedValue = oldDescriptor->expected2;
+                }
                 else if (isDcasDescriptor(old))
                 {
                     dcas_descriptor* oldDescriptor =
                         detail::toDcasDescriptor(old.value);
+                    if (oldDescriptor == nullptr)
+                        continue;
 
                     for (auto& r : oldDescriptor->requirements)
                         if (&r.atom == &requirement.atom)
                             requirement.expectedValue = r.expectedValue;
                 }
                 else
+                {
                     requirement.expectedValue = old.value;
+
+                    break;
+                }
             }
+        }
+
+        void complete(dcas_descriptor& descriptor)
+        {
+            bool successed =
+                (descriptor.status.load() == dcas_status_t::SUCCESSED);
+
+            for (auto i : descriptor.order)
+                applyRequirement(
+                    descriptor, descriptor.requirements[i], successed);
         }
 
         rdcss_descriptor createProxy(
@@ -88,7 +111,8 @@ namespace task_executor
             cas_requirement& requirement)
         {
             return rdcss_descriptor{
-                .atom1 = reinterpret_cast<std::atomic_size_t&>(descriptor.status),
+                .atom1 =
+                reinterpret_cast<std::atomic_size_t&>(descriptor.status),
                 .expected1 = static_cast<size_t>(dcas_status_t::UNDECIDED),
                 .atom2 = requirement.atom,
                 .expected2 = requirement.expectedValue,
@@ -101,22 +125,27 @@ namespace task_executor
             rdcss_descriptor& proxy,
             atomic_captured& captured)
         {
-            return !isDcasDescriptor(captured) && captured.value == proxy.expected2;
+            return !isDcasDescriptor(captured) &&
+                captured.value == proxy.expected2;
         }
 
         bool hasPredecessorBeenFound(
             rdcss_descriptor& proxy,
             atomic_captured& captured)
         {
-            return isDcasDescriptor(captured) && captured.value != proxy.new2;
+            return isDcasDescriptor(captured) &&
+                captured.value != proxy.new2;
         }
 
         bool isRdcssFailed(rdcss_descriptor& proxy, atomic_captured& captured)
         {
-            return !isDcasDescriptor(captured) && captured.value != proxy.expected2;
+            return !isDcasDescriptor(captured) &&
+                captured.value != proxy.expected2;
         }
 
-        void progressDescriptor(dcas_descriptor*& descriptor, dcas_status_t& oldStatus)
+        void progressDescriptor(
+            dcas_descriptor*& descriptor,
+            dcas_status_t& oldStatus)
         {
             dcas_status_t status = dcas_status_t::SUCCESSED;
 
@@ -147,7 +176,8 @@ namespace task_executor
             descriptor->status.compare_exchange_weak(oldStatus, status);
         }
 
-        dcas_descriptor dcas_descriptor::create(std::array<cas_requirement, 2>& requirements)
+        dcas_descriptor dcas_descriptor::create(
+            std::array<cas_requirement, 2>& requirements)
         {
             std::array<size_t, 2> order =
                 (detail::toSizeT(&requirements[0].atom) <
