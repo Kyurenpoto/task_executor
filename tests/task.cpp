@@ -252,6 +252,7 @@ TEST_CASE("execute_task_with_multi_thread")
         std::thread t1{ [&e, &a, &b](){
             thread_local_t::currentExecutor = nullptr;
 
+            while (a.cntPrior.load() != 0);
             a.act(e, action_t::DISPATCH);
         } };
 
