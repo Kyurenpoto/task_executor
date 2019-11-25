@@ -49,22 +49,22 @@ namespace task_executor
     {
         void pushBack(T* data)
         {
-            while (push(back, front, 1, reinterpret_cast<size_t>(data)) != 0);
+            while (push(back, 1, reinterpret_cast<size_t>(data)) != 0);
         }
 
         void pushFront(T* data)
         {
-            while (push(front, back, N - 1, reinterpret_cast<size_t>(data)) != 0);
+            while (push(front, N - 1, reinterpret_cast<size_t>(data)) != 0);
         }
 
         T* popBack()
         {
-            return reinterpret_cast<T*>(pop(back, front, N - 1));
+            return reinterpret_cast<T*>(pop(back, N - 1));
         }
 
         T* popFront()
         {
-            return reinterpret_cast<T*>(pop(front, back, 1));
+            return reinterpret_cast<T*>(pop(front, 1));
         }
 
     private:
@@ -72,32 +72,29 @@ namespace task_executor
         std::array<lockfree_op::atomic_ext, N> arr;
 
         size_t getOldAtom(
-            lockfree_op::atomic_ext& atom,
-            lockfree_op::atomic_ext& subAtom)
+            lockfree_op::atomic_ext& atom)
         {
-            std::array<lockfree_op::cas_requirement, 2> requirements{
-                lockfree_op::cas_requirement{
-                .atom = atom, .expectedValue = 0, .newValue = 0 },
-                lockfree_op::cas_requirement{
-                .atom = subAtom, .expectedValue = 0, .newValue = 0 }
-            };
+            lockfree_op::atomic_captured captured;
+            do
+            {
+                captured = lockfree_op::cas1(atom,
+                    0, lockfree_op::value_status_t::NORMAL,
+                    0, lockfree_op::value_status_t::NORMAL);
+            } while (captured.status != lockfree_op::value_status_t::NORMAL);
 
-            lockfree_op::dcas(requirements);
-
-            return requirements[0].expectedValue;
+            return captured.value;
         }
 
         size_t push(
             lockfree_op::atomic_ext& atom,
-            lockfree_op::atomic_ext& subAtom,
             size_t increment,
             size_t data)
         {
             while (true)
             {
-                size_t oldAtom = getOldAtom(atom, subAtom);
+                size_t oldAtom = getOldAtom(atom) % N;
                 size_t newAtom = (oldAtom + increment) % N;
-                size_t oldElement = getOldAtom(arr[newAtom], subAtom);
+                size_t oldElement = getOldAtom(arr[newAtom]);
                 size_t saveAtom = oldAtom;
                 std::array<lockfree_op::cas_requirement, 2> requirements{
                     lockfree_op::cas_requirement{
@@ -117,14 +114,13 @@ namespace task_executor
 
         size_t pop(
             lockfree_op::atomic_ext& atom,
-            lockfree_op::atomic_ext& subAtom,
             size_t increment)
         {
             while (true)
             {
-                size_t oldAtom = getOldAtom(atom, subAtom);
+                size_t oldAtom = getOldAtom(atom) % N;
                 size_t newAtom = (oldAtom + increment) % N;
-                size_t oldElement = getOldAtom(arr[oldAtom], subAtom);
+                size_t oldElement = getOldAtom(arr[oldAtom]);
                 size_t saveAtom = oldAtom;
                 std::array<lockfree_op::cas_requirement, 2> requirements{
                     lockfree_op::cas_requirement{

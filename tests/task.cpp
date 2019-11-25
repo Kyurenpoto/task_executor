@@ -433,6 +433,7 @@ TEST_CASE("execute_task_with_multi_thread")
             thread_local_t::currentExecutor = nullptr;
 
             a.act(e, action_t::DISPATCH);
+
             c.act(e, action_t::DISPATCH);
         } };
 
