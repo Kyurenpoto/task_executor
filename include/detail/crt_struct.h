@@ -39,133 +39,108 @@ namespace task_executor
         }
     };
 
+    /*
+     * Refered to this paper:
+     * ¡°DCAS-BasedConcurrentDeques¡± by O Agesen et al.
+     */
+
     template<class T, size_t N>
     struct lock_free_fixed_deque
     {
-        lock_free_fixed_deque()
+        void pushBack(T* data)
         {
-            if constexpr (std::is_pointer_v<T>)
-                arr.fill(nullptr);
+            while (push(back, front, 1, reinterpret_cast<size_t>(data)) != 0);
         }
 
-        void pushBack(T data)
+        void pushFront(T* data)
         {
-            std::array<lockfree_op::cas_requirement, 2> requirements =
-                createRequirements();
-            size_t& oldFront = requirements[0].expectedValue;
-            size_t& oldBack = requirements[1].expectedValue;
-            do
-            {
-                if (isOverflow(oldFront, oldBack))
-                    continue;
-
-                requirements[0].newValue = oldFront;
-                requirements[1].newValue = (oldBack + 1) % N;
-            } while (!lockfree_op::dcas(requirements));
-
-            arr[oldBack] = data;
+            while (push(front, back, N - 1, reinterpret_cast<size_t>(data)) != 0);
         }
 
-        void pushFront(T data)
+        T* popBack()
         {
-            std::array<lockfree_op::cas_requirement, 2> requirements =
-                createRequirements();
-            size_t& oldFront = requirements[0].expectedValue;
-            size_t& oldBack = requirements[1].expectedValue;
-            do
-            {
-                if (isOverflow(oldFront, oldBack))
-                    continue;
-
-                requirements[0].newValue = (oldFront + N - 1) % N;
-                requirements[1].newValue = oldBack;
-            } while (!lockfree_op::dcas(requirements));
-
-            arr[oldFront] = data;
+            return reinterpret_cast<T*>(pop(back, front, N - 1));
         }
 
-        std::optional<T> popBack()
+        T* popFront()
         {
-            std::array<lockfree_op::cas_requirement, 2> requirements =
-                createRequirements();
-            size_t& oldFront = requirements[0].expectedValue;
-            size_t& oldBack = requirements[1].expectedValue;
-            do
-            {
-                if (isUnderflow(oldFront, oldBack))
-                    return std::nullopt;
-
-                requirements[0].newValue = oldFront;
-                requirements[1].newValue = (oldBack + N - 1) % N;
-            } while (!lockfree_op::dcas(requirements));
-
-            return std::optional<T>{ arr[(oldBack + N - 1) % N] };
-        }
-
-        std::optional<T> popFront()
-        {
-            std::array<lockfree_op::cas_requirement, 2> requirements =
-                createRequirements();
-            size_t& oldFront = requirements[0].expectedValue;
-            size_t& oldBack = requirements[1].expectedValue;
-            do
-            {
-                if (isUnderflow(oldFront, oldBack))
-                    return std::nullopt;
-
-                requirements[0].newValue = (oldFront + 1) % N;
-                requirements[1].newValue = oldBack;
-            } while (!lockfree_op::dcas(requirements));
-
-            return std::optional<T>{ arr[(oldFront + 1) % N] };
-        }
-
-        bool isEmpty()
-        {
-            auto requirements = createRequirements();
-            size_t& oldFront = requirements[0].expectedValue;
-            size_t& oldBack = requirements[1].expectedValue;
-
-            return isUnderflow(oldFront, oldBack);
-        }
-
-        bool isFull()
-        {
-            auto requirements = createRequirements();
-            size_t& oldFront = requirements[0].expectedValue;
-            size_t& oldBack = requirements[1].expectedValue;
-
-            return isOverflow(oldFront, oldBack);
+            return reinterpret_cast<T*>(pop(front, back, 1));
         }
 
     private:
-        lockfree_op::atomic_ext front, back;
-        std::array<T, N> arr;
+        lockfree_op::atomic_ext front, back{ .value = 1 };
+        std::array<lockfree_op::atomic_ext, N> arr;
 
-        std::array<lockfree_op::cas_requirement, 2> createRequirements()
+        size_t getOldAtom(
+            lockfree_op::atomic_ext& atom,
+            lockfree_op::atomic_ext& subAtom)
         {
-            size_t oldFront = front.value.load(), oldBack = back.value.load();
-
             std::array<lockfree_op::cas_requirement, 2> requirements{
                 lockfree_op::cas_requirement{
-                .atom = front, .expectedValue = oldFront, .newValue = oldFront },
+                .atom = atom, .expectedValue = 0, .newValue = 0 },
                 lockfree_op::cas_requirement{
-                .atom = back, .expectedValue = oldBack, .newValue = oldBack }
+                .atom = subAtom, .expectedValue = 0, .newValue = 0 }
             };
 
             lockfree_op::dcas(requirements);
 
-            return requirements;
+            return requirements[0].expectedValue;
         }
 
-        bool isOverflow(size_t oldFront, size_t oldBack)
+        size_t push(
+            lockfree_op::atomic_ext& atom,
+            lockfree_op::atomic_ext& subAtom,
+            size_t increment,
+            size_t data)
         {
-            return oldFront - oldBack == 1 || oldBack - oldFront == N - 1;
+            while (true)
+            {
+                size_t oldAtom = getOldAtom(atom, subAtom);
+                size_t newAtom = (oldAtom + increment) % N;
+                size_t oldElement = getOldAtom(arr[newAtom], subAtom);
+                size_t saveAtom = oldAtom;
+                std::array<lockfree_op::cas_requirement, 2> requirements{
+                    lockfree_op::cas_requirement{
+                    .atom = atom, .expectedValue = oldAtom,
+                    .newValue = (oldElement == 0 ? newAtom : oldAtom) },
+                    lockfree_op::cas_requirement{
+                    .atom = arr[newAtom], .expectedValue = oldElement,
+                    .newValue = data }
+                };
+
+                if (lockfree_op::dcas(requirements))
+                    return oldElement;
+                else if (requirements[0].expectedValue == saveAtom)
+                    return 1;
+            }
         }
 
-        bool isUnderflow(size_t oldFront, size_t oldBack)
+        size_t pop(
+            lockfree_op::atomic_ext& atom,
+            lockfree_op::atomic_ext& subAtom,
+            size_t increment)
         {
-            return oldFront == oldBack;
+            while (true)
+            {
+                size_t oldAtom = getOldAtom(atom, subAtom);
+                size_t newAtom = (oldAtom + increment) % N;
+                size_t oldElement = getOldAtom(arr[oldAtom], subAtom);
+                size_t saveAtom = oldAtom;
+                std::array<lockfree_op::cas_requirement, 2> requirements{
+                    lockfree_op::cas_requirement{
+                    .atom = atom, .expectedValue = oldAtom,
+                    .newValue = (oldElement == 0 ? oldAtom : newAtom) },
+                    lockfree_op::cas_requirement{
+                    .atom = arr[oldAtom], .expectedValue = oldElement,
+                    .newValue = 0 }
+                };
+
+                if (lockfree_op::dcas(requirements))
+                    return oldElement;
+                else if (requirements[0].expectedValue == saveAtom &&
+                    requirements[1].expectedValue == 0)
+                    return 0;
+            }
         }
     };
 
