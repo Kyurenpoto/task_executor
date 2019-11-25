@@ -200,33 +200,30 @@ namespace test_task
         {
             while (true)
             {
-                std::optional<task_executor::task_t*> task = taskDeq.popFront();
-                if (!task)
+                task_executor::task_t* task = taskDeq.popFront();
+                if (task == nullptr)
                     break;
 
-                executeTask(task.value());
+                executeTask(task);
             }
         }
 
         void flushStealer()
         {
-            std::optional<task_executor::task_t*> task = taskDeq.popFront();
-            if (task)
-                executeTask(task.value());
+            task_executor::task_t* task = taskDeq.popFront();
+            if (task != nullptr)
+                executeTask(task);
         }
 
         void executeTask(task_executor::task_t* task)
         {
-            if (task == nullptr)
-                return;
-
             (*(task->executable))();
 
             for (auto next : task->arrPosterior)
                 next->cntPrior.fetch_sub(1);
         }
 
-        task_executor::crt_fixed_deque<task_executor::task_t*, 5> taskDeq;
+        task_executor::crt_fixed_deque<task_executor::task_t, 5> taskDeq;
         std::atomic_bool isFlushing = false;
     };
 }
@@ -270,8 +267,8 @@ TEST_CASE("execute_task_with_multi_thread")
             b.act(e, action_t::DISPATCH);
         } };
 
-        t1.join();
         t2.join();
+        t1.join();
 
         REQUIRE(flag1.load() == true);
         REQUIRE(flag2.load() == true);
