@@ -1,6 +1,6 @@
 /*
- * Algorithms were written referring to this paper:
- * ¡°A Practical Multi-Word Compare-and-Swap Operation¡± by Timothy L. Harris, Keir Fraser, and Ian A. Pratt
+ * Refered to this paper:
+ * ¡°A Practical Multi-Word Compare-and-Swap Operation¡± by Timothy et al.
  */
 
 #pragma once
@@ -57,28 +57,35 @@ namespace task_executor
         }
 
         atomic_captured cas1(atomic_ext& atom,
-            const size_t expectedValue, const value_status_t expectedStatus,
-            const size_t newValue, const value_status_t newStatus)
+            const size_t expectedValue,
+            const value_status_t expectedStatus,
+            const size_t newValue,
+            const value_status_t newStatus)
         {
             while (true)
             {
-                value_status_t oldStatus = expectedStatus;
-                if (atom.status.compare_exchange_weak(
-                    oldStatus, value_status_t::UNDECIDED))
-                {
-                    size_t oldValue = expectedValue;
-                    bool isSuccessed =
-                        atom.value.compare_exchange_weak(oldValue, newValue);
-                    atom.status.store(isSuccessed ? newStatus : oldStatus);
+                value_status_t oldStatus = atom.status.load();
+                if (oldStatus == value_status_t::UNDECIDED)
+                    continue;
 
-                    return atomic_captured
-                    { .value = oldValue, .status = oldStatus };
-                }
-                else if (oldStatus != value_status_t::UNDECIDED)
-                {
-                    return atomic_captured
-                    { .value = atom.value.load(), .status = oldStatus };
-                }
+                size_t oldValue = atom.value.load();
+                if (oldStatus != expectedStatus || oldValue != expectedValue)
+                    return atomic_captured{
+                    .value = oldValue, .status = oldStatus };
+
+                if (!atom.status.compare_exchange_weak(
+                    oldStatus, value_status_t::UNDECIDED))
+                    continue;
+
+                bool isSuccessed =
+                    atom.value.compare_exchange_weak(oldValue, newValue);
+
+                oldStatus = value_status_t::UNDECIDED;
+                atom.status.compare_exchange_weak(
+                    oldStatus, isSuccessed ? newStatus : expectedStatus);
+
+                return atomic_captured{
+                    .value = expectedValue, .status = expectedStatus };
             }
         }
 
@@ -108,7 +115,14 @@ namespace task_executor
                     descriptor.expected2, value_status_t::NORMAL,
                     detail::toSizeT(&descriptor), value_status_t::RDCSS);
                 if (isRdcssDescriptor(captured))
-                    complete(*detail::toRdcssDescriptor(captured.value));
+                {
+                    rdcss_descriptor* oldDescriptor =
+                        detail::toRdcssDescriptor(captured.value);
+                    if (oldDescriptor == nullptr)
+                        continue;
+
+                    complete(*oldDescriptor);
+                }
             } while (isRdcssDescriptor(captured));
 
             if (captured.value == descriptor.expected2)
