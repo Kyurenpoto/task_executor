@@ -274,9 +274,9 @@ TEST_CASE("execute_task_with_multi_thread")
         REQUIRE(flag2.load() == true);
     }
 
-    SUBCASE("1_executor_2_thread_2_context_dispatch")
+    SUBCASE("1_executor_3_thread_2_context_dispatch")
     {
-        /*task_t a, b, c, d;
+        task_t a, b, c, d;
         a.isReleased.store(true);
         b.isReleased.store(true);
         c.isReleased.store(true);
@@ -286,11 +286,11 @@ TEST_CASE("execute_task_with_multi_thread")
         c.arrPosterior.push_back(&d);
         d.cntPrior.fetch_add(1);
 
-        bool flag1 = false, flag2 = false, flag3 = false, flag4 = false;
-        executable_t<void()> x{ [&flag1]()->void { flag1 = true; } },
-            y{ [&flag2]()->void { flag2 = true; } },
-            u{ [&flag3]()->void { flag3 = true; } },
-            v{ [&flag4]()->void { flag4 = true; } };
+        std::atomic_bool flag1 = false, flag2 = false, flag3 = false, flag4 = false;
+        executable_t<void()> x{ [&flag1]()->void { flag1.store(true); } },
+            y{ [&flag2]()->void { flag2.store(true); } },
+            u{ [&flag3]()->void { flag3.store(true); } },
+            v{ [&flag4]()->void { flag4.store(true); } };
         a.executable = &x;
         b.executable = &y;
         c.executable = &u;
@@ -298,30 +298,162 @@ TEST_CASE("execute_task_with_multi_thread")
 
         tmp_executor_lock_free e;
 
-        std::thread t1{ [&e, &a, &b, &c, &d]() {
+        std::thread t1{ [&e, &flag1, &flag2, &flag3, &flag4]() {
             thread_local_t::currentExecutor = nullptr;
 
-            while (a.cntPrior.load() != 0);
-            a.act(e, action_t::DISPATCH);
+            while (!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load())
+                e.flush();
         } };
 
-        std::thread t2{ [&e, &a, &b, &c, &d]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
+
+        std::thread t2{ [&e, &a, &b]() {
             thread_local_t::currentExecutor = nullptr;
+
+            a.act(e, action_t::DISPATCH);
 
             while (b.cntPrior.load() != 0);
             b.act(e, action_t::DISPATCH);
         } };
 
-        t1.join();
+        std::thread t3{ [&e, &c, &d]() {
+            thread_local_t::currentExecutor = nullptr;
+
+            c.act(e, action_t::DISPATCH);
+
+            while (d.cntPrior.load() != 0);
+            d.act(e, action_t::DISPATCH);
+        } };
+
         t2.join();
+        t3.join();
+        t1.join();
 
         REQUIRE(flag1 == true);
-        REQUIRE(flag2 == true);*/
+        REQUIRE(flag2 == true);
+        REQUIRE(flag3 == true);
+        REQUIRE(flag4 == true);
+    }
+    
+    SUBCASE("1_executor_3_thread_2_context_dispatch_cross")
+    {
+        task_t a, b, c, d;
+        a.isReleased.store(true);
+        b.isReleased.store(true);
+        c.isReleased.store(true);
+        d.isReleased.store(true);
+        a.arrPosterior.push_back(&b);
+        b.cntPrior.fetch_add(1);
+        c.arrPosterior.push_back(&d);
+        d.cntPrior.fetch_add(1);
+
+        std::atomic_bool flag1 = false, flag2 = false, flag3 = false, flag4 = false;
+        executable_t<void()> x{ [&flag1]()->void { flag1.store(true); } },
+            y{ [&flag2]()->void { flag2.store(true); } },
+            u{ [&flag3]()->void { flag3.store(true); } },
+            v{ [&flag4]()->void { flag4.store(true); } };
+        a.executable = &x;
+        b.executable = &y;
+        c.executable = &u;
+        d.executable = &v;
+
+        tmp_executor_lock_free e;
+
+        std::thread t1{ [&e, &flag1, &flag2, &flag3, &flag4]() {
+            thread_local_t::currentExecutor = nullptr;
+
+            while (!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load())
+                e.flush();
+        } };
+
+        std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
+
+        std::thread t2{ [&e, &a, &d]() {
+            thread_local_t::currentExecutor = nullptr;
+
+            a.act(e, action_t::DISPATCH);
+
+            while (d.cntPrior.load() != 0);
+            d.act(e, action_t::DISPATCH);
+        } };
+
+        std::thread t3{ [&e, &c, &b]() {
+            thread_local_t::currentExecutor = nullptr;
+
+            c.act(e, action_t::DISPATCH);
+
+            while (b.cntPrior.load() != 0);
+            b.act(e, action_t::DISPATCH);
+        } };
+
+        t2.join();
+        t3.join();
+        t1.join();
+
+        REQUIRE(flag1 == true);
+        REQUIRE(flag2 == true);
+        REQUIRE(flag3 == true);
+        REQUIRE(flag4 == true);
     }
 
-    SUBCASE("1_executor_2_thread_2_context_dispatch_cross")
+    SUBCASE("1_executor_3_thread_2_context_dispatch_split")
     {
+        task_t a, b, c, d;
+        a.isReleased.store(true);
+        b.isReleased.store(true);
+        c.isReleased.store(true);
+        d.isReleased.store(true);
+        a.arrPosterior.push_back(&b);
+        b.cntPrior.fetch_add(1);
+        c.arrPosterior.push_back(&d);
+        d.cntPrior.fetch_add(1);
 
+        std::atomic_bool flag1 = false, flag2 = false, flag3 = false, flag4 = false;
+        executable_t<void()> x{ [&flag1]()->void { flag1.store(true); } },
+            y{ [&flag2]()->void { flag2.store(true); } },
+            u{ [&flag3]()->void { flag3.store(true); } },
+            v{ [&flag4]()->void { flag4.store(true); } };
+        a.executable = &x;
+        b.executable = &y;
+        c.executable = &u;
+        d.executable = &v;
+
+        tmp_executor_lock_free e;
+
+        std::thread t1{ [&e, &flag1, &flag2, &flag3, &flag4]() {
+            thread_local_t::currentExecutor = nullptr;
+
+            while (!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load())
+                e.flush();
+        } };
+
+        std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
+
+        std::thread t2{ [&e, &a, &c]() {
+            thread_local_t::currentExecutor = nullptr;
+
+            a.act(e, action_t::DISPATCH);
+            c.act(e, action_t::DISPATCH);
+        } };
+
+        std::thread t3{ [&e, &b, &d]() {
+            thread_local_t::currentExecutor = nullptr;
+
+            while (b.cntPrior.load() != 0);
+            b.act(e, action_t::DISPATCH);
+
+            while (d.cntPrior.load() != 0);
+            d.act(e, action_t::DISPATCH);
+        } };
+
+        t2.join();
+        t3.join();
+        t1.join();
+
+        REQUIRE(flag1 == true);
+        REQUIRE(flag2 == true);
+        REQUIRE(flag3 == true);
+        REQUIRE(flag4 == true);
     }
 
     SUBCASE("1_executor_2_thread_act_in_task_dispatch_defer")
