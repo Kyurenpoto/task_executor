@@ -1,6 +1,6 @@
 /*
- * Algorithms were written referring to this paper:
- * ¡°A Practical Multi-Word Compare-and-Swap Operation¡± by Timothy L. Harris, Keir Fraser, and Ian A. Pratt
+ * Refered to this paper:
+ * ¡°A Practical Multi-Word Compare-and-Swap Operation¡± by Timothy et al.
  */
 
 #pragma once
@@ -60,40 +60,16 @@ namespace task_executor
         {
             size_t assignValue =
                 (successed ? requirement.newValue : requirement.expectedValue);
+            atomic_captured old = cas1(requirement.atom,
+                detail::toSizeT(&descriptor), value_status_t::DCAS,
+                assignValue, value_status_t::NORMAL);
 
-            while (true)
-            {
-                atomic_captured old = cas1(requirement.atom,
-                    detail::toSizeT(&descriptor), value_status_t::DCAS,
-                    assignValue, value_status_t::NORMAL);
-
-                if (isRdcssDescriptor(old))
-                {
-                    rdcss_descriptor* oldDescriptor =
-                        detail::toRdcssDescriptor(old.value);
-                    if (oldDescriptor == nullptr)
-                        continue;
-
-                    requirement.expectedValue = oldDescriptor->expected2;
-                }
-                else if (isDcasDescriptor(old))
-                {
-                    dcas_descriptor* oldDescriptor =
-                        detail::toDcasDescriptor(old.value);
-                    if (oldDescriptor == nullptr)
-                        continue;
-
-                    for (auto& r : oldDescriptor->requirements)
-                        if (&r.atom == &requirement.atom)
-                            requirement.expectedValue = r.expectedValue;
-                }
-                else
-                {
-                    requirement.expectedValue = old.value;
-
-                    break;
-                }
-            }
+            while (isRdcssDescriptor(old) || isDcasDescriptor(old))
+                old = cas1(requirement.atom,
+                    0, value_status_t::NORMAL,
+                    0, value_status_t::NORMAL);
+            
+            requirement.expectedValue = old.value;
         }
 
         void complete(dcas_descriptor& descriptor)
@@ -160,12 +136,17 @@ namespace task_executor
 
                 if (hasPredecessorBeenFound(proxy, captured))
                 {
-                    descriptor = detail::toDcasDescriptor(captured.value);
-                    descriptor->cntRef.fetch_add(1);
+                    dcas_descriptor* oldDescriptor = detail::toDcasDescriptor(captured.value);
+                    if (oldDescriptor != nullptr)
+                    {
+                        oldDescriptor->cntRef.fetch_add(1);
+                        descriptor = oldDescriptor;
 
-                    return;
+                        return;
+                    }
                 }
-                else if (isRdcssFailed(proxy, captured))
+                
+                if (isRdcssFailed(proxy, captured))
                 {
                     status = dcas_status_t::FAILED;
 
