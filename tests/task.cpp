@@ -249,15 +249,10 @@ TEST_CASE("execute_task_with_multi_thread")
 
         tmp_executor_lock_free e;
 
-        std::chrono::system_clock::time_point start =
-            std::chrono::system_clock::now();
-
-        std::thread t1{ [&e, &flag1, &flag2, &start]() {
+        std::thread t1{ [&e, &flag1, &flag2]() {
             thread_local_t::currentExecutor = nullptr;
 
-            while ((!flag1.load() || !flag2.load()) && 
-                std::chrono::duration_cast<std::chrono::seconds>(
-                    std::chrono::system_clock::now() - start).count() < 1)
+            while (!flag1.load() || !flag2.load())
                 e.flush();
         } };
 
@@ -303,15 +298,10 @@ TEST_CASE("execute_task_with_multi_thread")
 
         tmp_executor_lock_free e;
 
-        std::chrono::system_clock::time_point start =
-            std::chrono::system_clock::now();
-
-        std::thread t1{ [&e, &flag1, &flag2, &flag3, &flag4, &start]() {
+        std::thread t1{ [&e, &flag1, &flag2, &flag3, &flag4]() {
             thread_local_t::currentExecutor = nullptr;
 
-            while ((!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load()) &&
-                std::chrono::duration_cast<std::chrono::seconds>(
-                    std::chrono::system_clock::now() - start).count() < 1)
+            while (!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load())
                 e.flush();
         } };
 
@@ -369,15 +359,10 @@ TEST_CASE("execute_task_with_multi_thread")
 
         tmp_executor_lock_free e;
 
-        std::chrono::system_clock::time_point start =
-            std::chrono::system_clock::now();
-
-        std::thread t1{ [&e, &flag1, &flag2, &flag3, &flag4, &start]() {
+        std::thread t1{ [&e, &flag1, &flag2, &flag3, &flag4]() {
             thread_local_t::currentExecutor = nullptr;
 
-            while ((!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load()) &&
-                std::chrono::duration_cast<std::chrono::seconds>(
-                    std::chrono::system_clock::now() - start).count() < 1)
+            while (!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load())
                 e.flush();
         } };
 
@@ -435,15 +420,10 @@ TEST_CASE("execute_task_with_multi_thread")
 
         tmp_executor_lock_free e;
 
-        std::chrono::system_clock::time_point start =
-            std::chrono::system_clock::now();
-
-        std::thread t1{ [&e, &flag1, &flag2, &flag3, &flag4, &start]() {
+        std::thread t1{ [&e, &flag1, &flag2, &flag3, &flag4]() {
             thread_local_t::currentExecutor = nullptr;
 
-            while ((!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load()) &&
-                std::chrono::duration_cast<std::chrono::seconds>(
-                    std::chrono::system_clock::now() - start).count() < 1)
+            while (!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load())
                 e.flush();
         } };
 
@@ -476,7 +456,7 @@ TEST_CASE("execute_task_with_multi_thread")
         REQUIRE(flag3 == true);
         REQUIRE(flag4 == true);
     }
-
+    
     SUBCASE("1_executor_3_thread_act_in_task_dispatch_defer")
     {
         task_t a, b, c, d;
@@ -498,15 +478,10 @@ TEST_CASE("execute_task_with_multi_thread")
         c.executable = &u;
         d.executable = &v;
 
-        std::chrono::system_clock::time_point start =
-            std::chrono::system_clock::now();
-
-        std::thread t1{ [&e, &flag1, &flag2, &start]() {
+        std::thread t1{ [&e, &flag1, &flag2]() {
             thread_local_t::currentExecutor = nullptr;
 
-            while ((!flag1.load() || !flag2.load()) &&
-                std::chrono::duration_cast<std::chrono::seconds>(
-                    std::chrono::system_clock::now() - start).count() < 1)
+            while (!flag1.load() || !flag2.load())
                 e.flush();
         } };
 
@@ -535,7 +510,7 @@ TEST_CASE("execute_task_with_multi_thread")
         REQUIRE(flag1 == true);
         REQUIRE(flag2 == true);
     }
-
+    
     SUBCASE("2_executor_3_thread_1_context_respectively_dispatch")
     {
         task_t a, b;
@@ -552,15 +527,10 @@ TEST_CASE("execute_task_with_multi_thread")
 
         tmp_executor_lock_free e1, e2;
 
-        std::chrono::system_clock::time_point start =
-            std::chrono::system_clock::now();
-
-        std::thread t1{ [&e1, &e2, &flag1, &flag2, &start]() {
+        std::thread t1{ [&e1, &e2, &flag1, &flag2]() {
             thread_local_t::currentExecutor = nullptr;
 
-            while ((!flag1.load() || !flag2.load()) &&
-                std::chrono::duration_cast<std::chrono::seconds>(
-                    std::chrono::system_clock::now() - start).count() < 1)
+            while (!flag1.load() || !flag2.load())
             {
                 e1.flush();
                 e2.flush();
@@ -589,7 +559,7 @@ TEST_CASE("execute_task_with_multi_thread")
         REQUIRE(flag1.load() == true);
         REQUIRE(flag2.load() == true);
     }
-
+    
     SUBCASE("2_executor_3_thread_2_context_respectively_cross_dispatch")
     {
         task_t a, b, c, d;
@@ -615,15 +585,10 @@ TEST_CASE("execute_task_with_multi_thread")
         c.executable = &u;
         d.executable = &v;
 
-        std::chrono::system_clock::time_point start =
-            std::chrono::system_clock::now();
-
-        std::thread t1{ [&e1, &e2, &flag1, &flag2, &flag3, &flag4, &start]() {
+        std::thread t1{ [&e1, &e2, &flag1, &flag2, &flag3, &flag4]() {
             thread_local_t::currentExecutor = nullptr;
 
-            while ((!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load()) &&
-                std::chrono::duration_cast<std::chrono::seconds>(
-                    std::chrono::system_clock::now() - start).count() < 1)
+            while (!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load())
             {
                 e1.flush();
                 e2.flush();
@@ -659,7 +624,7 @@ TEST_CASE("execute_task_with_multi_thread")
         REQUIRE(flag3 == true);
         REQUIRE(flag4 == true);
     }
-
+    
     SUBCASE("2_executor_3_thread_act_in_task_cross_dispatch_defer")
     {
         task_t a, b, c, d;
@@ -681,15 +646,10 @@ TEST_CASE("execute_task_with_multi_thread")
         c.executable = &u;
         d.executable = &v;
 
-        std::chrono::system_clock::time_point start =
-            std::chrono::system_clock::now();
-
-        std::thread t1{ [&e1, &e2, &flag1, &flag2, &start]() {
+        std::thread t1{ [&e1, &e2, &flag1, &flag2]() {
             thread_local_t::currentExecutor = nullptr;
 
-            while ((!flag1.load() || !flag2.load()) &&
-                std::chrono::duration_cast<std::chrono::seconds>(
-                    std::chrono::system_clock::now() - start).count() < 1)
+            while (!flag1.load() || !flag2.load())
             {
                 e1.flush();
                 e2.flush();

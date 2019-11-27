@@ -5,10 +5,32 @@
 #include <optional>
 
 #include "util.h"
-#include "dcas.h"
 
 namespace task_executor
 {
+    enum class atomic_status : size_t
+    {
+        NORMAL,
+        UNDECIDED
+    };
+
+    template<class T>
+    struct atomic_handle;
+
+    template<>
+    struct atomic_handle<size_t>
+    {
+        std::atomic_size_t value = 0;
+        std::atomic<atomic_status> status = atomic_status::NORMAL;
+    };
+
+    template<class T>
+    struct atomic_handle<T*>
+    {
+        std::atomic<T*> value = nullptr;
+        std::atomic<atomic_status> status = atomic_status::NORMAL;
+    };
+
     template<class T>
     struct lock_free_list
     {
@@ -39,103 +61,102 @@ namespace task_executor
         }
     };
 
-    /*
-     * Refered to this paper:
-     * ¡°DCAS-BasedConcurrentDeques¡± by O Agesen et al.
-     */
-
     template<class T, size_t N>
     struct lock_free_fixed_deque
     {
         void pushBack(T* data)
         {
-            while (push(back, 1, reinterpret_cast<size_t>(data)) != 0);
+            push(back, 1, data);
         }
 
         void pushFront(T* data)
         {
-            while (push(front, N - 1, reinterpret_cast<size_t>(data)) != 0);
+            push(front, N - 1, data);
         }
 
         T* popBack()
         {
-            return reinterpret_cast<T*>(pop(back, N - 1));
+            return pop(back, N - 1);
         }
 
         T* popFront()
         {
-            return reinterpret_cast<T*>(pop(front, 1));
+            return pop(front, 1);
         }
 
     private:
-        lockfree_op::atomic_ext front, back{ .value = 1 };
-        std::array<lockfree_op::atomic_ext, N> arr;
+        atomic_handle<size_t> front, back{ .value = 1 };
+        std::array<atomic_handle<T*>, N> arr;
 
-        size_t getOldAtom(
-            lockfree_op::atomic_ext& atom)
-        {
-            lockfree_op::atomic_captured captured;
-            do
-            {
-                captured = lockfree_op::cas1(atom,
-                    0, lockfree_op::value_status_t::NORMAL,
-                    0, lockfree_op::value_status_t::NORMAL);
-            } while (captured.status != lockfree_op::value_status_t::NORMAL);
-
-            return captured.value;
-        }
-
-        size_t push(
-            lockfree_op::atomic_ext& atom,
-            size_t increment,
-            size_t data)
+        void push(atomic_handle<size_t>& atom, size_t increment, T* data)
         {
             while (true)
             {
-                size_t oldAtom = getOldAtom(atom) % N;
-                size_t newAtom = (oldAtom + increment) % N;
-                size_t oldElement = getOldAtom(arr[oldAtom]);
-                size_t saveAtom = oldAtom;
-                std::array<lockfree_op::cas_requirement, 2> requirements{
-                    lockfree_op::cas_requirement{
-                    .atom = atom, .expectedValue = oldAtom,
-                    .newValue = (oldElement == 0 ? newAtom : oldAtom) },
-                    lockfree_op::cas_requirement{
-                    .atom = arr[oldAtom], .expectedValue = oldElement,
-                    .newValue = data }
-                };
+                atomic_status oldAtomStatus = atomic_status::NORMAL;
+                if (!atom.status.compare_exchange_weak(
+                    oldAtomStatus, atomic_status::UNDECIDED))
+                    continue;
 
-                if (lockfree_op::dcas(requirements))
-                    return oldElement;
-                else if (requirements[0].expectedValue == saveAtom)
-                    return 1;
+                size_t oldAtom = atom.value.load();
+                size_t newAtom = (oldAtom + increment) % N;
+
+                atomic_status oldElementStatus = atomic_status::NORMAL;
+                if (!arr[oldAtom].status.compare_exchange_weak(
+                    oldElementStatus, atomic_status::UNDECIDED))
+                {
+                    atom.status.store(atomic_status::NORMAL);
+
+                    continue;
+                }
+
+                T* oldElement = nullptr;
+                bool isNotFull = arr[oldAtom].value.compare_exchange_weak(
+                    oldElement, data);
+
+                if (isNotFull)
+                    atom.value.store(newAtom);
+                atom.status.store(atomic_status::NORMAL);
+
+                arr[oldAtom].status.store(atomic_status::NORMAL);
+
+                if (isNotFull)
+                    break;
             }
         }
 
-        size_t pop(
-            lockfree_op::atomic_ext& atom,
-            size_t increment)
+        T* pop(atomic_handle<size_t>& atom, size_t increment)
         {
             while (true)
             {
-                size_t oldAtom = getOldAtom(atom) % N;
-                size_t newAtom = (oldAtom + increment) % N;
-                size_t oldElement = getOldAtom(arr[newAtom]);
-                size_t saveAtom = oldAtom;
-                std::array<lockfree_op::cas_requirement, 2> requirements{
-                    lockfree_op::cas_requirement{
-                    .atom = atom, .expectedValue = oldAtom,
-                    .newValue = (oldElement == 0 ? oldAtom : newAtom) },
-                    lockfree_op::cas_requirement{
-                    .atom = arr[newAtom], .expectedValue = oldElement,
-                    .newValue = 0 }
-                };
+                atomic_status oldAtomStatus = atomic_status::NORMAL;
+                if (!atom.status.compare_exchange_weak(
+                    oldAtomStatus, atomic_status::UNDECIDED))
+                    continue;
 
-                if (lockfree_op::dcas(requirements))
-                    return oldElement;
-                else if (requirements[0].expectedValue == saveAtom &&
-                    requirements[1].expectedValue == 0)
-                    return 0;
+                size_t oldAtom = atom.value.load();
+                size_t newAtom = (oldAtom + increment) % N;
+
+                atomic_status oldElementStatus = atomic_status::NORMAL;
+                if (!arr[newAtom].status.compare_exchange_weak(
+                    oldElementStatus, atomic_status::UNDECIDED))
+                {
+                    atom.status.store(atomic_status::NORMAL);
+
+                    continue;
+                }
+
+                T* oldElement = arr[newAtom].value.load();
+                bool isNotEmpty = (oldElement != nullptr);
+
+                if (isNotEmpty)
+                    atom.value.store(newAtom);
+                atom.status.store(atomic_status::NORMAL);
+
+                if (isNotEmpty)
+                    arr[newAtom].value.store(nullptr);
+                arr[newAtom].status.store(atomic_status::NORMAL);
+
+                return oldElement;
             }
         }
     };
