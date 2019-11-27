@@ -80,9 +80,11 @@ namespace task_executor
                 bool isSuccessed =
                     atom.value.compare_exchange_weak(oldValue, newValue);
 
-                oldStatus = value_status_t::UNDECIDED;
-                atom.status.compare_exchange_weak(
-                    oldStatus, isSuccessed ? newStatus : expectedStatus);
+                do
+                {
+                    oldStatus = value_status_t::UNDECIDED;
+                } while (!atom.status.compare_exchange_weak(
+                    oldStatus, isSuccessed ? newStatus : expectedStatus));
 
                 return atomic_captured{
                     .value = expectedValue, .status = expectedStatus };

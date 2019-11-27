@@ -54,14 +54,14 @@ namespace task_executor
         }
 
         void applyRequirement(
-            dcas_descriptor& descriptor,
+            dcas_descriptor* descriptor,
             cas_requirement& requirement,
             bool successed)
         {
             size_t assignValue =
                 (successed ? requirement.newValue : requirement.expectedValue);
             atomic_captured old = cas1(requirement.atom,
-                detail::toSizeT(&descriptor), value_status_t::DCAS,
+                detail::toSizeT(descriptor), value_status_t::DCAS,
                 assignValue, value_status_t::NORMAL);
 
             while (isRdcssDescriptor(old) || isDcasDescriptor(old))
@@ -72,14 +72,19 @@ namespace task_executor
             requirement.expectedValue = old.value;
         }
 
-        void complete(dcas_descriptor& descriptor)
+        void complete(dcas_descriptor* descriptor)
         {
             bool successed =
-                (descriptor.status.load() == dcas_status_t::SUCCESSED);
+                (descriptor->status.load() == dcas_status_t::SUCCESSED);
 
-            for (auto i : descriptor.order)
+            for (auto i : descriptor->order)
+            {
+                if (i >= descriptor->order.size())
+                    break;
+
                 applyRequirement(
-                    descriptor, descriptor.requirements[i], successed);
+                    descriptor, descriptor->requirements[i], successed);
+            }
         }
 
         rdcss_descriptor createProxy(
@@ -127,6 +132,13 @@ namespace task_executor
 
             for (auto i : descriptor->order)
             {
+                if (i >= descriptor->order.size())
+                {
+                    status = dcas_status_t::FAILED;
+
+                    break;
+                }
+
                 rdcss_descriptor proxy =
                     createProxy(*descriptor, descriptor->requirements[i]);
                 atomic_captured captured = rdcss(proxy);
@@ -136,14 +148,15 @@ namespace task_executor
 
                 if (hasPredecessorBeenFound(proxy, captured))
                 {
-                    dcas_descriptor* oldDescriptor = detail::toDcasDescriptor(captured.value);
+                    dcas_descriptor* oldDescriptor =
+                        detail::toDcasDescriptor(captured.value);
                     if (oldDescriptor != nullptr)
                     {
                         oldDescriptor->cntRef.fetch_add(1);
                         descriptor = oldDescriptor;
-
-                        return;
                     }
+
+                    return;
                 }
                 
                 if (isRdcssFailed(proxy, captured))
@@ -181,7 +194,7 @@ namespace task_executor
                 dcas_status_t oldStatus = descriptor->status.load();
                 if (oldStatus != dcas_status_t::UNDECIDED)
                 {
-                    complete(*descriptor);
+                    complete(descriptor);
 
                     if (descriptor == this)
                         break;

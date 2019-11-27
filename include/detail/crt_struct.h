@@ -94,14 +94,14 @@ namespace task_executor
             {
                 size_t oldAtom = getOldAtom(atom) % N;
                 size_t newAtom = (oldAtom + increment) % N;
-                size_t oldElement = getOldAtom(arr[newAtom]);
+                size_t oldElement = getOldAtom(arr[oldAtom]);
                 size_t saveAtom = oldAtom;
                 std::array<lockfree_op::cas_requirement, 2> requirements{
                     lockfree_op::cas_requirement{
                     .atom = atom, .expectedValue = oldAtom,
                     .newValue = (oldElement == 0 ? newAtom : oldAtom) },
                     lockfree_op::cas_requirement{
-                    .atom = arr[newAtom], .expectedValue = oldElement,
+                    .atom = arr[oldAtom], .expectedValue = oldElement,
                     .newValue = data }
                 };
 
@@ -120,14 +120,14 @@ namespace task_executor
             {
                 size_t oldAtom = getOldAtom(atom) % N;
                 size_t newAtom = (oldAtom + increment) % N;
-                size_t oldElement = getOldAtom(arr[oldAtom]);
+                size_t oldElement = getOldAtom(arr[newAtom]);
                 size_t saveAtom = oldAtom;
                 std::array<lockfree_op::cas_requirement, 2> requirements{
                     lockfree_op::cas_requirement{
                     .atom = atom, .expectedValue = oldAtom,
                     .newValue = (oldElement == 0 ? oldAtom : newAtom) },
                     lockfree_op::cas_requirement{
-                    .atom = arr[oldAtom], .expectedValue = oldElement,
+                    .atom = arr[newAtom], .expectedValue = oldElement,
                     .newValue = 0 }
                 };
 
