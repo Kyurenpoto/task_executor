@@ -210,7 +210,7 @@ namespace test_task
 
         void flushStealer()
         {
-            task_executor::task_t* task = taskDeq.popFront();
+            task_executor::task_t* task = taskDeq.popBack();
             if (task != nullptr)
                 executeTask(task);
         }

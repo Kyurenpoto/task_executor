@@ -6,18 +6,11 @@
 namespace task_executor
 {
     // backward push, forward pop
-    template<
-        class TaskDeque = task_deque,
-        class TimedTaskMap = timed_task_map
-    >
     struct strand_executor_t :
-        executor_t<strand_executor_t<TaskDeque, TimedTaskMap>,
-        TaskDeque, TimedTaskMap>
+        executor_t<strand_executor_t>
     {
-        template<class Task>
-        void assign(Task* task)
-        {
-
-        }
+        strand_executor_t() :
+            executor_t<strand_executor_t>{ 0 }
+        {}
     };
 }

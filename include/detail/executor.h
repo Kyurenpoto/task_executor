@@ -6,10 +6,13 @@
 
 #include "context_creator.h"
 #include "util.h"
-#include "task_container.h"
+#include "crt_struct.h"
+#include "task.h"
 
 namespace task_executor
 {
+    struct task_t;
+
     struct executor_base_t :
         context_creator_t<executor_base_t>
     {
@@ -21,14 +24,14 @@ namespace task_executor
       forward push/pop, without ownership
     */
 
-    template<
-        class T,
-        class TaskDeque = task_deque,
-        class TimedTaskMap = timed_task_map
-    >
+    template<class T>
     struct executor_t :
         executor_base_t
     {
+        executor_t(const size_t maxRef) :
+            remainRef{ maxRef }
+        {}
+
         template<class Context>
         void release(std::initializer_list<Context*> contexts)
         {
@@ -36,27 +39,73 @@ namespace task_executor
                 x->release(this);
         }
 
-        template<class Task>
-        void assign_front(Task* task)
+        void assign_front(task_t* task)
         {
-            getConcrete<T&>(*this).assign_front(task);
+            taskDeq.pushFront(task);
         }
 
-        template<class Task>
-        void assign_back(Task* task)
+        void assign_back(task_t* task)
         {
-            getConcrete<T&>(*this).assign_back(task);
+            taskDeq.pushBack(task);
         }
 
         void flush()
         {
-            getConcrete<T&>(*this).flush();
+            if (isFlushing.load())
+            {
+                flushStealer();
+                return;
+            }
+
+            isFlushing.store(true);
+
+            flushOwner();
+
+            isFlushing.store(false);
+        }
+
+        void flushOwner()
+        {
+            while (true)
+            {
+                task_executor::task_t* task = taskDeq.popFront();
+                if (task == nullptr)
+                    break;
+
+                executeTask(task);
+            }
+        }
+
+        void flushStealer()
+        {
+            size_t oldRemainRef;
+            do
+            {
+                oldRemainRef = remainRef.load();
+                if (oldRemainRef == 0)
+                    return;
+            } while (!remainRef.compare_exchange_weak(
+                oldRemainRef, oldRemainRef - 1));
+
+            task_executor::task_t* task = taskDeq.popBack();
+            if (task != nullptr)
+                executeTask(task);
+        }
+
+        void executeTask(task_executor::task_t* task)
+        {
+            (*(task->executable))();
+
+            for (auto next : task->arrPosterior)
+                next->cntPrior.fetch_sub(1);
         }
 
     private:
-        TaskDeque* immediate;
-        std::array<TimedTaskMap*, cntTimeSlot> shortTerm;
-        std::array<TimedTaskMap*, cntTimeSlot> longTerm;
+        static constexpr size_t SIZE_DEQUE = 100;
+
+        crt_fixed_deque<task_t, SIZE_DEQUE> taskDeq;
+        std::atomic_bool isFlushing = false;
+        std::atomic_size_t remainRef;
     };
 
     // Facade struct that can use executor through inheritance

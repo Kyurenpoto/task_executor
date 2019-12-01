@@ -12,7 +12,9 @@ namespace task_executor
 
     struct task_deque
     {
-        crt_list_deque<task_t*> tasks;
+        static constexpr size_t SIZE_DEQUE = 100;
+
+        crt_fixed_deque<task_t*, SIZE_DEQUE> tasks;
         std::atomic_bool hasOwner;
         std::atomic_size_t cntRemainingReference;
     };
