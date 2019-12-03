@@ -51,13 +51,4 @@ namespace task_executor
     protected:
         task_t* task;
     };
-
-    struct subcontext_t :
-        context_t
-    {
-        void setExecutable(executable_base_t* executable)
-        {
-            task->executable = executable;
-        }
-    };
 }

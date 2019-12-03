@@ -6,12 +6,13 @@
 namespace task_executor
 {
     struct thread_pool_executor_t :
-        executor_t<thread_pool_executor_t>
+        executor_t
     {
         thread_pool_executor_t(const size_t nThreads) :
-            executor_t<thread_pool_executor_t>{ nThreads - 1 }
+            executor_t{ nThreads - 1 }
         {
-            static_assert(nThreads >= 1);
+            if (nThreads == 0)
+                throw std::logic_error{ "nThreads must be greater than 0" };
         }
     };
 }

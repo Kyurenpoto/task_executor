@@ -5,12 +5,16 @@
 
 namespace task_executor
 {
-    // backward push, forward pop
     struct strand_executor_t :
-        executor_t<strand_executor_t>
+        executor_t
     {
         strand_executor_t() :
-            executor_t<strand_executor_t>{ 0 }
+            executor_t{ 0 }
         {}
+
+        void assign_front(task_t* task) override
+        {
+            assign_back(task);
+        }
     };
 }

@@ -8,10 +8,10 @@
 namespace task_executor
 {
     struct system_executor_t :
-        executor_t<system_executor_t>
+        executor_t
     {
         system_executor_t() :
-            executor_t<system_executor_t>{ std::numeric_limits<size_t>::max() }
+            executor_t{ std::numeric_limits<size_t>::max() }
         {}
 
         static system_executor_t& get()

@@ -183,13 +183,20 @@ namespace test_task
 
         void flush()
         {
-            if (isFlushing.load())
+            bool oldIsFlushing;
+
+            do
+            {
+                oldIsFlushing = isFlushing.load();
+            } while (!oldIsFlushing &&
+                !isFlushing.compare_exchange_weak(oldIsFlushing, true));
+
+            if (oldIsFlushing)
             {
                 flushStealer();
+
                 return;
             }
-
-            isFlushing.store(true);
 
             flushOwner();
 

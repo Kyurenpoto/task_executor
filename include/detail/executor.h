@@ -15,16 +15,8 @@ namespace task_executor
 
     struct executor_base_t :
         context_creator_t<executor_base_t>
-    {
+    {};
 
-    };
-
-    /*
-      backward push/pop, basically
-      forward push/pop, without ownership
-    */
-
-    template<class T>
     struct executor_t :
         executor_base_t
     {
@@ -39,36 +31,51 @@ namespace task_executor
                 x->release(this);
         }
 
-        void assign_front(task_t* task)
+        virtual void assign_front(task_t* task)
         {
             taskDeq.pushFront(task);
         }
 
-        void assign_back(task_t* task)
+        virtual void assign_back(task_t* task)
         {
             taskDeq.pushBack(task);
         }
 
         void flush()
         {
-            if (isFlushing.load())
+            bool oldIsFlushing;
+            do
             {
-                flushStealer();
+                oldIsFlushing = isFlushing.load();
+            } while (!oldIsFlushing &&
+                !isFlushing.compare_exchange_weak(oldIsFlushing, true));
+
+            if (oldIsFlushing)
+            {
+                size_t oldRemainRef;
+                do
+                {
+                    oldRemainRef = remainRef.load();
+                } while (oldRemainRef > 0 &&
+                    !remainRef.compare_exchange_weak(
+                        oldRemainRef, oldRemainRef - 1));
+
+                if (oldRemainRef > 0)
+                    flushStealer();
+
                 return;
             }
-
-            isFlushing.store(true);
 
             flushOwner();
 
             isFlushing.store(false);
         }
 
-        void flushOwner()
+        virtual void flushOwner()
         {
             while (true)
             {
-                task_executor::task_t* task = taskDeq.popFront();
+                task_t* task = taskDeq.popFront();
                 if (task == nullptr)
                     break;
 
@@ -76,18 +83,9 @@ namespace task_executor
             }
         }
 
-        void flushStealer()
+        virtual void flushStealer()
         {
-            size_t oldRemainRef;
-            do
-            {
-                oldRemainRef = remainRef.load();
-                if (oldRemainRef == 0)
-                    return;
-            } while (!remainRef.compare_exchange_weak(
-                oldRemainRef, oldRemainRef - 1));
-
-            task_executor::task_t* task = taskDeq.popBack();
+            task_t* task = taskDeq.popBack();
             if (task != nullptr)
                 executeTask(task);
         }
@@ -107,6 +105,4 @@ namespace task_executor
         std::atomic_bool isFlushing = false;
         std::atomic_size_t remainRef;
     };
-
-    // Facade struct that can use executor through inheritance
 }
