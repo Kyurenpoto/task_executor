@@ -17,7 +17,11 @@ Inspired by https://github.com/chriskohlhoff/executors
     * [ ] Achieving 100% 'context' test coverage
 6. [ ] Implementing 'distributor'
     * [ ] Achieving 100% 'distributor' test coverage
-7. [ ] Writing/Implementing Use-Case scenarios
+7. [ ] Implementing 'thread manager'
+    * [ ] Achieving 100% 'thread manager' test coverage
+8. [ ] Implementing User API
+    * [ ] Achieving 100% User API test coverage
+9. [ ] Writing/Implementing Use-Case scenarios
     * [ ] Simple game server
 	* [ ] Simple discriminator with gradient descent
-8. [ ] Optimizing Code/Performance
+10. [ ] Optimizing Code/Performance
