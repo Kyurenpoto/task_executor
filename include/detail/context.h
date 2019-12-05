@@ -1,7 +1,7 @@
 #pragma once
 
 #include "context_creator.h"
-#include "task.h"
+#include "executor.h"
 
 namespace task_executor
 {
@@ -20,35 +20,27 @@ namespace task_executor
                 task->arrPosterior.push_back(x->task);
         }
 
-        const executable_base_t* getExecutable() const
+        void release(executor_t& executorRequested)
         {
-            return task->executable;
+            task->isReleased.store(true);
+
+            if (task->cntPrior.load() == 0)
+                task->act(executorRequested, action);
+            else
+                executor = &executorRequested;
         }
 
-        template<class Executor>
-        void release(Executor& executor)
+        void reflectPrior()
         {
-            for (;;)
-            {
-                bool isReleased = task->isReleased.load();
+            task->cntPrior.fetch_sub(1);
 
-                if (isReleased)
-                    break;
-
-                if (task->isReleased.compare_exchange_weak(isReleased, true))
-                {
-                    std::size_t cntPrior = task->cntPrior.load();
-                    if (cntPrior == 0)
-                        task->act(executor);
-
-                    task = nullptr;
-
-                    break;
-                }
-            }
+            if (task->isReleased.load() && task->cntPrior.load() == 0)
+                task->act(*executor, action);
         }
 
     protected:
         task_t* task;
+        action_t action;
+        executor_t* executor;
     };
 }

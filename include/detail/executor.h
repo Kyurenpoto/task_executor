@@ -11,14 +11,12 @@
 
 namespace task_executor
 {
-    struct task_t;
-
-    struct executor_base_t :
-        context_creator_t<executor_base_t>
+    // for task tests
+    struct executor_base_t
     {};
 
     struct executor_t :
-        executor_base_t
+        executor_base_t, context_creator_t<executor_t>
     {
         executor_t(const size_t maxRef) :
             remainRef{ maxRef }
