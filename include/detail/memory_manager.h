@@ -33,14 +33,15 @@ namespace task_executor
         }
 
         template<class T, class... Args>
-        T* xnew(Args&&... args)
+        std::unique_ptr<T> xnew(Args&&... args)
         {
             void* ptr = resource.allocate(sizeof(T), alignof(T));
 
             if (ptr == nullptr)
                 return nullptr;
-            
-            return new(ptr) T{ args... };
+
+            return std::unique_ptr<T>{
+                new(ptr) T{ args... }, deleter{ .pool = this }};
         }
 
         template<class T>
