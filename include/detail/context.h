@@ -2,12 +2,19 @@
 
 #include "context_creator.h"
 #include "executor.h"
+#include "memory_manager.h"
 
 namespace task_executor
 {
     struct context_t :
         context_creator_t<context_t>
     {
+        template<class Func>
+        static context_t* concrete(Func&& func, action_t action, executor_t* executor)
+        {
+            return new context_t{ new task_t{ .executable = new executable_t{ func } }, action, executor };
+        }
+
         void addPrior(std::initializer_list<context_t*> contexts)
         {
             for (auto x : contexts)
@@ -39,8 +46,14 @@ namespace task_executor
         }
 
     protected:
-        task_t* task;
+        task_t* task = nullptr;
         action_t action;
-        executor_t* executor;
+        executor_t* executor = nullptr;
+
+        context_t(task_t* _task, action_t _action, executor_t* _executor) :
+            task{ _task },
+            action{ _action },
+            executor{ _executor }
+        {}
     };
 }
