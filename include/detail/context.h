@@ -10,21 +10,27 @@ namespace task_executor
         context_creator_t<context_t>
     {
         template<class Func>
-        static context_t* concrete(Func&& func, action_t action, executor_t* executor)
+        context_t(Func&& func, action_t _action, executor_t* _executor) :
+            executable{ getMemoryPool()->xnew<executable_t<Func>>(func) },
+            task{ getMemoryPool()->xnew<task_t>() },
+            action{ _action },
+            executor{ _executor }
         {
-            return new context_t{ new task_t{ .executable = new executable_t{ func } }, action, executor };
+            task->executee = [&executable]() { (*executable)(); };
         }
 
-        void addPrior(std::initializer_list<context_t*> contexts)
+        void addPrior(std::unique_ptr<context_t>& context)
         {
-            for (auto x : contexts)
-                x->task->arrPosterior.push_back(task);
+            task->cntPrior.fetch_add(1);
+            
+            context->handler.push_back([this]() { reflectPrior(); });
         }
 
-        void addPostrior(std::initializer_list<context_t*> contexts)
+        void addPostrior(std::unique_ptr<context_t>& context)
         {
-            for (auto x : contexts)
-                task->arrPosterior.push_back(x->task);
+            context->task->cntPrior.fetch_add(1);
+
+            handler.push_back([&context]() { context->reflectPrior(); });
         }
 
         void release(executor_t& executorRequested)
@@ -46,14 +52,10 @@ namespace task_executor
         }
 
     protected:
-        task_t* task = nullptr;
+        std::unique_ptr<executable_base_t> executable = nullptr;
+        std::unique_ptr<task_t> task = nullptr;
         action_t action;
         executor_t* executor = nullptr;
-
-        context_t(task_t* _task, action_t _action, executor_t* _executor) :
-            task{ _task },
-            action{ _action },
-            executor{ _executor }
-        {}
+        std::deque<std::function<void()>> handler;
     };
 }

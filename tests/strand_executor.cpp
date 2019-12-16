@@ -47,8 +47,7 @@ TEST_CASE("strand_executor")
         task_t t;
         t.isReleased.store(true);
 
-        executable_t<void()> f{ []() {} };
-        t.executable = &f;
+        t.executee = []() {};
 
         t.act(s, action_t::DISPATCH);
 

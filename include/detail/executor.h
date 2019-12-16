@@ -77,7 +77,7 @@ namespace task_executor
                 if (task == nullptr)
                     break;
 
-                executeTask(task);
+                task->executee();
             }
         }
 
@@ -85,15 +85,7 @@ namespace task_executor
         {
             task_t* task = taskDeq.popBack();
             if (task != nullptr)
-                executeTask(task);
-        }
-
-        void executeTask(task_executor::task_t* task)
-        {
-            (*(task->executable))();
-
-            for (auto next : task->arrPosterior)
-                next->cntPrior.fetch_sub(1);
+                task->executee();
         }
 
     private:
