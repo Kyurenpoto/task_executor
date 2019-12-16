@@ -87,6 +87,8 @@ namespace task_executor
             {
                 oldHead = head.load();
             } while (head.compare_exchange_weak(oldHead, newHead));
+
+            return newHead;
         }
 
     private:
