@@ -38,7 +38,7 @@ namespace test_task
                 tmp_task* task = taskDeq.front();
                 taskDeq.pop_front();
 
-                (*(task->executable))();
+                task->executee();
 
                 for (auto next : task->arrPosterior)
                     next->cntPrior.fetch_sub(1);
@@ -70,8 +70,8 @@ TEST_CASE("execute_task")
         bool flag1 = false, flag2 = false;
         executable_t<void()> x{ [&flag1]()->void { flag1 = true; } },
             y{ [&flag2]()->void { flag2 = true; } };
-        a.executable = &x;
-        b.executable = &y;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
 
         tmp_executor e;
 
@@ -95,8 +95,8 @@ TEST_CASE("execute_task")
         bool flag1 = false, flag2 = false;
         executable_t<void()> x{ [&flag1]()->void { flag1 = true; } },
             y{ [&flag2]()->void { flag2 = true; } };
-        a.executable = &x;
-        b.executable = &y;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
 
         tmp_executor e1, e2;
 
@@ -121,8 +121,8 @@ TEST_CASE("execute_task")
         executable_t<void()>
             x{ [&e, &b]()->void { b.act(e, action_t::DISPATCH); } },
             y{ [&flag]()->void { flag = true; } };
-        a.executable = &x;
-        b.executable = &y;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
 
         a.act(e, action_t::DISPATCH);
         
@@ -144,8 +144,8 @@ TEST_CASE("execute_task")
         executable_t<void()>
             x{ [&e2, &b]()->void { b.act(e2, action_t::DISPATCH); } },
             y{ []()->void {} };
-        a.executable = &x;
-        b.executable = &y;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
 
         REQUIRE_THROWS_AS(a.act(e1, action_t::DISPATCH), const std::logic_error&);
     }
@@ -163,8 +163,8 @@ TEST_CASE("execute_task")
         executable_t<void()>
             x{ [&e2, &b]()->void { b.act(e2, action_t::DEFER); } },
             y{ []()->void {} };
-        a.executable = &x;
-        b.executable = &y;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
 
         REQUIRE_NOTHROW(a.act(e1, action_t::DISPATCH));
         
@@ -230,7 +230,7 @@ namespace test_task
 
         void executeTask(tmp_task* task)
         {
-            (*(task->executable))();
+            task->executee();
 
             for (auto next : task->arrPosterior)
                 next->cntPrior.fetch_sub(1);
@@ -257,8 +257,8 @@ TEST_CASE("execute_task_with_multi_thread")
         std::atomic_bool flag1 = false, flag2 = false;
         executable_t<void()> x{ [&flag1]()->void { flag1.store(true); } },
             y{ [&flag2]()->void { flag2.store(true); } };
-        a.executable = &x;
-        b.executable = &y;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
 
         tmp_executor_lock_free e;
 
@@ -304,10 +304,10 @@ TEST_CASE("execute_task_with_multi_thread")
             y{ [&flag2]()->void { flag2.store(true); } },
             u{ [&flag3]()->void { flag3.store(true); } },
             v{ [&flag4]()->void { flag4.store(true); } };
-        a.executable = &x;
-        b.executable = &y;
-        c.executable = &u;
-        d.executable = &v;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
+        c.executee = [&u]() { u(); };
+        d.executee = [&v]() { v(); };
 
         tmp_executor_lock_free e;
 
@@ -365,10 +365,10 @@ TEST_CASE("execute_task_with_multi_thread")
             y{ [&flag2]()->void { flag2.store(true); } },
             u{ [&flag3]()->void { flag3.store(true); } },
             v{ [&flag4]()->void { flag4.store(true); } };
-        a.executable = &x;
-        b.executable = &y;
-        c.executable = &u;
-        d.executable = &v;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
+        c.executee = [&u]() { u(); };
+        d.executee = [&v]() { v(); };
 
         tmp_executor_lock_free e;
 
@@ -426,10 +426,10 @@ TEST_CASE("execute_task_with_multi_thread")
             y{ [&flag2]()->void { flag2.store(true); } },
             u{ [&flag3]()->void { flag3.store(true); } },
             v{ [&flag4]()->void { flag4.store(true); } };
-        a.executable = &x;
-        b.executable = &y;
-        c.executable = &u;
-        d.executable = &v;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
+        c.executee = [&u]() { u(); };
+        d.executee = [&v]() { v(); };
 
         tmp_executor_lock_free e;
 
@@ -486,10 +486,10 @@ TEST_CASE("execute_task_with_multi_thread")
             y{ [&flag1]()->void { flag1.store(true); } },
             u{ [&e, &d]()->void { d.act(e, action_t::DEFER); } },
             v{ [&flag2]()->void { flag2.store(true); } };
-        a.executable = &x;
-        b.executable = &y;
-        c.executable = &u;
-        d.executable = &v;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
+        c.executee = [&u]() { u(); };
+        d.executee = [&v]() { v(); };
 
         std::thread t1{ [&e, &flag1, &flag2]() {
             thread_local_t::currentExecutor = nullptr;
@@ -535,8 +535,8 @@ TEST_CASE("execute_task_with_multi_thread")
         std::atomic_bool flag1 = false, flag2 = false;
         executable_t<void()> x{ [&flag1]()->void { flag1.store(true); } },
             y{ [&flag2]()->void { flag2.store(true); } };
-        a.executable = &x;
-        b.executable = &y;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
 
         tmp_executor_lock_free e1, e2;
 
@@ -593,10 +593,10 @@ TEST_CASE("execute_task_with_multi_thread")
             y{ [&flag2]()->void { flag2.store(true); } },
             u{ [&flag3]()->void { flag3.store(true); } },
             v{ [&flag4]()->void { flag4.store(true); } };
-        a.executable = &x;
-        b.executable = &y;
-        c.executable = &u;
-        d.executable = &v;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
+        c.executee = [&u]() { u(); };
+        d.executee = [&v]() { v(); };
 
         std::thread t1{ [&e1, &e2, &flag1, &flag2, &flag3, &flag4]() {
             thread_local_t::currentExecutor = nullptr;
@@ -654,10 +654,10 @@ TEST_CASE("execute_task_with_multi_thread")
             y{ [&flag1]()->void { flag1.store(true); } },
             u{ [&e1, &d]()->void { d.act(e1, action_t::DEFER); } },
             v{ [&flag2]()->void { flag2.store(true); } };
-        a.executable = &x;
-        b.executable = &y;
-        c.executable = &u;
-        d.executable = &v;
+        a.executee = [&x]() { x(); };
+        b.executee = [&y]() { y(); };
+        c.executee = [&u]() { u(); };
+        d.executee = [&v]() { v(); };
 
         std::thread t1{ [&e1, &e2, &flag1, &flag2]() {
             thread_local_t::currentExecutor = nullptr;

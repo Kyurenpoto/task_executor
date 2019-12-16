@@ -18,7 +18,7 @@ namespace task_executor
     struct task_t
     {
         std::atomic_size_t cntPrior = 0;
-        executable_base_t* executable = nullptr;
+        std::function<void()> executee;
         std::atomic_bool isReleased = false;
 
         template<class Executor>
@@ -56,8 +56,6 @@ namespace task_executor
         template<class Executor>
         void defer(Executor& executor)
         {
-            // defer = graph pop -> local deque push back
-
             executor.assign_back(this);
 
             if (isSameObj(thread_local_t::currentExecutor, &executor))
@@ -67,8 +65,6 @@ namespace task_executor
         template<class Executor>
         void dispatch(Executor& executor)
         {
-            // graph pop -> local deque push front
-
             if (thread_local_t::currentExecutor != nullptr &&
                 !isSameObj(thread_local_t::currentExecutor, &executor))
                 throw std::logic_error{ "External dispatch operations are"
