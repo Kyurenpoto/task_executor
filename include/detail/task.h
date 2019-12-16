@@ -19,6 +19,7 @@ namespace task_executor
     {
         std::atomic_size_t cntPrior = 0;
         std::function<void()> executee;
+        std::function<void()> notifier;
         std::atomic_bool isReleased = false;
 
         template<class Executor>

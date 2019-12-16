@@ -17,6 +17,7 @@ namespace task_executor
             executor{ _executor }
         {
             task->executee = [&executable]() { (*executable)(); };
+            task->notifier = [this]() { notifyComplete(); };
         }
 
         void addPrior(std::unique_ptr<context_t>& context)
@@ -49,6 +50,12 @@ namespace task_executor
 
             if (task->isReleased.load() && task->cntPrior.load() == 0)
                 task->act(*executor, action);
+        }
+
+        void notifyComplete()
+        {
+            for (auto& f : handler)
+                f();
         }
 
     protected:

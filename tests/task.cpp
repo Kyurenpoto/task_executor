@@ -3,8 +3,6 @@
 
 #include "task_executor.h"
 
-#include <memory_resource>
-
 namespace test_task
 {
     struct tmp_task :
