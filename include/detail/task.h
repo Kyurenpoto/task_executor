@@ -18,7 +18,6 @@ namespace task_executor
     struct task_t
     {
         std::atomic_size_t cntPrior = 0;
-        std::deque<task_t*> arrPosterior;
         executable_base_t* executable = nullptr;
         std::atomic_bool isReleased = false;
 

@@ -7,17 +7,23 @@
 
 namespace test_task
 {
+    struct tmp_task :
+        task_executor::task_t
+    {
+        std::deque<task_t*> arrPosterior;
+    };
+
     struct tmp_executor :
         task_executor::executor_base_t
     {
         void assign_front(task_executor::task_t* task)
         {
-            taskDeq.push_front(task);
+            taskDeq.push_front(static_cast<tmp_task*>(task));
         }
 
         void assign_back(task_executor::task_t* task)
         {
-            taskDeq.push_back(task);
+            taskDeq.push_back(static_cast<tmp_task*>(task));
         }
 
         void flush()
@@ -29,7 +35,7 @@ namespace test_task
 
             while (!taskDeq.empty())
             {
-                task_executor::task_t* task = taskDeq.front();
+                tmp_task* task = taskDeq.front();
                 taskDeq.pop_front();
 
                 (*(task->executable))();
@@ -41,7 +47,7 @@ namespace test_task
             isFlushing = false;
         }
 
-        std::deque<task_executor::task_t*> taskDeq;
+        std::deque<tmp_task*> taskDeq;
         bool isFlushing = false;
     };
 }
@@ -55,7 +61,7 @@ TEST_CASE("execute_task")
     {
         thread_local_t::currentExecutor = nullptr;
 
-        task_t a, b;
+        tmp_task a, b;
         a.isReleased.store(true);
         b.isReleased.store(true);
         a.arrPosterior.push_back(&b);
@@ -80,7 +86,7 @@ TEST_CASE("execute_task")
     {
         thread_local_t::currentExecutor = nullptr;
 
-        task_t a, b;
+        tmp_task a, b;
         a.isReleased.store(true);
         b.isReleased.store(true);
         a.arrPosterior.push_back(&b);
@@ -105,7 +111,7 @@ TEST_CASE("execute_task")
     {
         thread_local_t::currentExecutor = nullptr;
 
-        task_t a, b;
+        tmp_task a, b;
         a.isReleased.store(true);
         b.isReleased.store(true);
 
@@ -129,7 +135,7 @@ TEST_CASE("execute_task")
     {
         thread_local_t::currentExecutor = nullptr;
 
-        task_t a, b;
+        tmp_task a, b;
         a.isReleased.store(true);
         b.isReleased.store(true);
 
@@ -148,7 +154,7 @@ TEST_CASE("execute_task")
     {
         thread_local_t::currentExecutor = nullptr;
 
-        task_t a, b;
+        tmp_task a, b;
         a.isReleased.store(true);
         b.isReleased.store(true);
 
@@ -173,12 +179,12 @@ namespace test_task
     {
         void assign_front(task_executor::task_t* task)
         {
-            taskDeq.pushFront(task);
+            taskDeq.pushFront(static_cast<tmp_task*>(task));
         }
 
         void assign_back(task_executor::task_t* task)
         {
-            taskDeq.pushBack(task);
+            taskDeq.pushBack(static_cast<tmp_task*>(task));
         }
 
         void flush()
@@ -207,7 +213,7 @@ namespace test_task
         {
             while (true)
             {
-                task_executor::task_t* task = taskDeq.popFront();
+                tmp_task* task = taskDeq.popFront();
                 if (task == nullptr)
                     break;
 
@@ -217,12 +223,12 @@ namespace test_task
 
         void flushStealer()
         {
-            task_executor::task_t* task = taskDeq.popBack();
+            tmp_task* task = taskDeq.popBack();
             if (task != nullptr)
                 executeTask(task);
         }
 
-        void executeTask(task_executor::task_t* task)
+        void executeTask(tmp_task* task)
         {
             (*(task->executable))();
 
@@ -230,7 +236,7 @@ namespace test_task
                 next->cntPrior.fetch_sub(1);
         }
 
-        task_executor::crt_fixed_deque<task_executor::task_t, 5> taskDeq;
+        task_executor::crt_fixed_deque<tmp_task, 5> taskDeq;
         std::atomic_bool isFlushing = false;
     };
 }
@@ -242,7 +248,7 @@ TEST_CASE("execute_task_with_multi_thread")
 
     SUBCASE("1_executor_2_thread_1_context_dispatch")
     {
-        task_t a, b;
+        tmp_task a, b;
         a.isReleased.store(true);
         b.isReleased.store(true);
         a.arrPosterior.push_back(&b);
@@ -283,7 +289,7 @@ TEST_CASE("execute_task_with_multi_thread")
 
     SUBCASE("1_executor_3_thread_2_context_dispatch")
     {
-        task_t a, b, c, d;
+        tmp_task a, b, c, d;
         a.isReleased.store(true);
         b.isReleased.store(true);
         c.isReleased.store(true);
@@ -344,7 +350,7 @@ TEST_CASE("execute_task_with_multi_thread")
     
     SUBCASE("1_executor_3_thread_2_context_dispatch_cross")
     {
-        task_t a, b, c, d;
+        tmp_task a, b, c, d;
         a.isReleased.store(true);
         b.isReleased.store(true);
         c.isReleased.store(true);
@@ -405,7 +411,7 @@ TEST_CASE("execute_task_with_multi_thread")
 
     SUBCASE("1_executor_3_thread_2_context_dispatch_split")
     {
-        task_t a, b, c, d;
+        tmp_task a, b, c, d;
         a.isReleased.store(true);
         b.isReleased.store(true);
         c.isReleased.store(true);
@@ -466,7 +472,7 @@ TEST_CASE("execute_task_with_multi_thread")
     
     SUBCASE("1_executor_3_thread_act_in_task_dispatch_defer")
     {
-        task_t a, b, c, d;
+        tmp_task a, b, c, d;
         a.isReleased.store(true);
         b.isReleased.store(true);
         c.isReleased.store(true);
@@ -520,7 +526,7 @@ TEST_CASE("execute_task_with_multi_thread")
     
     SUBCASE("2_executor_3_thread_1_context_respectively_dispatch")
     {
-        task_t a, b;
+        tmp_task a, b;
         a.isReleased.store(true);
         b.isReleased.store(true);
         a.arrPosterior.push_back(&b);
@@ -569,7 +575,7 @@ TEST_CASE("execute_task_with_multi_thread")
     
     SUBCASE("2_executor_3_thread_2_context_respectively_cross_dispatch")
     {
-        task_t a, b, c, d;
+        tmp_task a, b, c, d;
         a.isReleased.store(true);
         b.isReleased.store(true);
         c.isReleased.store(true);
@@ -634,7 +640,7 @@ TEST_CASE("execute_task_with_multi_thread")
     
     SUBCASE("2_executor_3_thread_act_in_task_cross_dispatch_defer")
     {
-        task_t a, b, c, d;
+        tmp_task a, b, c, d;
         a.isReleased.store(true);
         b.isReleased.store(true);
         c.isReleased.store(true);
