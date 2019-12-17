@@ -11,10 +11,10 @@ Inspired by https://github.com/chriskohlhoff/executors
     * [x] Achieving 100% 'executable' test coverage
 3. [x] Implementing 'task'
     * [x] Achieving 100% 'task' test coverage
-4. [ ] Implementing 'executor'
-    * [ ] Achieving 100% 'executor' test coverage
-5. [ ] Implementing 'context'
-    * [ ] Achieving 100% 'context' test coverage
+4. [x] Implementing 'executor'
+    * [x] Achieving 100% 'executor' test coverage
+5. [x] Implementing 'context'
+    * [x] Achieving 100% 'context' test coverage
 6. [ ] Implementing 'distributor'
     * [ ] Achieving 100% 'distributor' test coverage
 7. [ ] Implementing 'thread manager'

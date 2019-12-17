@@ -30,7 +30,7 @@ namespace task_executor
         {
             context->task.cntPrior.fetch_add(1);
 
-            handler.push_back([&context]() { context->reflectPrior(); });
+            handler.push_back([context]() { context->reflectPrior(); });
         }
 
         void release()
