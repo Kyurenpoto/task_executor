@@ -10,17 +10,6 @@ namespace task_executor
     {
         memory_pool_t* next = nullptr;
         std::atomic_bool isActive = false;
-        
-        struct deleter
-        {
-            memory_pool_t* pool = nullptr;
-
-            template<class T>
-            void operator()(T* ptr)
-            {
-                pool->xdelete(ptr);
-            }
-        };
 
         void restore()
         {
@@ -33,20 +22,26 @@ namespace task_executor
         }
 
         template<class T, class... Args>
-        std::unique_ptr<T> xnew(Args&&... args)
+        T* xnew(Args&&... args)
         {
-            void* ptr = resource.allocate(sizeof(T), alignof(T));
+            T* ptr = static_cast<T*>(resource.allocate(sizeof(T), alignof(T)));
 
-            if (ptr == nullptr)
-                return nullptr;
+            return new(ptr) T{ std::forward<Args>(args)... };
+        }
 
-            return std::unique_ptr<T>{
-                new(ptr) T{ args... }, deleter{ .pool = this }};
+        template<class T>
+        T* xnew(T arg)
+        {
+            T* ptr = static_cast<T*>(resource.allocate(sizeof(T), alignof(T)));
+
+            return new(ptr) T{ std::forward<T>(arg) };
         }
 
         template<class T>
         void xdelete(T* ptr)
         {
+            ptr->~T();
+
             resource.deallocate(ptr, sizeof(T), alignof(T));
         }
 
@@ -75,7 +70,7 @@ namespace task_executor
                 {
                     oldIsActive = pool->isActive.load();
                 } while (!oldIsActive &&
-                    pool->isActive.compare_exchange_weak(oldIsActive, true));
+                    !pool->isActive.compare_exchange_weak(oldIsActive, true));
 
                 if (!oldIsActive)
                     return pool;
@@ -86,13 +81,51 @@ namespace task_executor
             do
             {
                 oldHead = head.load();
-            } while (head.compare_exchange_weak(oldHead, newHead));
+            } while (!head.compare_exchange_weak(oldHead, newHead));
 
             return newHead;
         }
 
     private:
         std::atomic<memory_pool_t*> head = nullptr;
+    };
+
+    template<class T>
+    struct xmanaged_ptr
+    {
+        template<class Func>
+        xmanaged_ptr(T* p, Func&& d) noexcept :
+            ptr{ p },
+            deleter{ std::function<void(void*)>{ d } }
+        {}
+
+        template<class U>
+        xmanaged_ptr(xmanaged_ptr<U>&& xmptr) noexcept :
+            ptr{ xmptr.ptr },
+            deleter{ xmptr.deleter }
+        {
+            xmptr.ptr = nullptr;
+            xmptr.deleter = {};
+        }
+
+        ~xmanaged_ptr()
+        {
+            if (deleter)
+                deleter(ptr);
+        }
+
+        T* operator->() const noexcept
+        {
+            return ptr;
+        }
+
+        std::add_lvalue_reference_t<T> operator*() const
+        {
+            return *ptr;
+        }
+
+        T* ptr;
+        std::function<void(void*)> deleter;
     };
 
     memory_manager_t& getMemoryManager()
@@ -110,5 +143,23 @@ namespace task_executor
             pool = getMemoryManager().obtain();
 
         return pool;
+    }
+
+    template<class T, class... Args>
+    xmanaged_ptr<T> make_xmanaged(Args&&... args)
+    {
+        return xmanaged_ptr{ getMemoryPool()->xnew<T>(
+            std::forward<Args>(args)...),
+            [pool = getMemoryPool()](void* ptr) {
+            pool->xdelete(static_cast<T*>(ptr)); } };
+    }
+
+    template<class T>
+    xmanaged_ptr<T> make_xmanaged(T arg)
+    {
+        return xmanaged_ptr{ getMemoryPool()->xnew<T>(
+            std::forward<T>(arg)),
+            [pool = getMemoryPool()](void* ptr) {
+            pool->xdelete(static_cast<T*>(ptr)); } };
     }
 }

@@ -48,6 +48,7 @@ TEST_CASE("strand_executor")
         t.isReleased.store(true);
 
         t.executee = []() {};
+        t.notifier = []() {};
 
         t.act(s, action_t::DISPATCH);
 

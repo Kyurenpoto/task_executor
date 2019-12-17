@@ -11,45 +11,42 @@ namespace task_executor
     {
         template<class Func>
         context_t(Func&& func, action_t _action, executor_t* _executor) :
-            executable{ getMemoryPool()->xnew<executable_t<Func>>(func) },
-            task{ getMemoryPool()->xnew<task_t>() },
+            executable{ make_xmanaged(executable_t{ std::function{ func } }) },
             action{ _action },
             executor{ _executor }
         {
-            task->executee = [&executable]() { (*executable)(); };
-            task->notifier = [this]() { notifyComplete(); };
+            task.executee = [this]() { (*executable)(); };
+            task.notifier = [this]() { notifyComplete(); };
         }
 
-        void addPrior(std::unique_ptr<context_t>& context)
+        void addPrior(context_t* context)
         {
-            task->cntPrior.fetch_add(1);
+            task.cntPrior.fetch_add(1);
             
             context->handler.push_back([this]() { reflectPrior(); });
         }
 
-        void addPostrior(std::unique_ptr<context_t>& context)
+        void addPostrior(context_t* context)
         {
-            context->task->cntPrior.fetch_add(1);
+            context->task.cntPrior.fetch_add(1);
 
             handler.push_back([&context]() { context->reflectPrior(); });
         }
 
-        void release(executor_t& executorRequested)
+        void release()
         {
-            task->isReleased.store(true);
+            task.isReleased.store(true);
 
-            if (task->cntPrior.load() == 0)
-                task->act(executorRequested, action);
-            else
-                executor = &executorRequested;
+            if (task.cntPrior.load() == 0)
+                task.act(*executor, action);
         }
 
         void reflectPrior()
         {
-            task->cntPrior.fetch_sub(1);
+            task.cntPrior.fetch_sub(1);
 
-            if (task->isReleased.load() && task->cntPrior.load() == 0)
-                task->act(*executor, action);
+            if (task.isReleased.load() && task.cntPrior.load() == 0)
+                task.act(*executor, action);
         }
 
         void notifyComplete()
@@ -59,8 +56,8 @@ namespace task_executor
         }
 
     protected:
-        std::unique_ptr<executable_base_t> executable = nullptr;
-        std::unique_ptr<task_t> task = nullptr;
+        xmanaged_ptr<executable_base_t> executable;
+        task_t task;
         action_t action;
         executor_t* executor = nullptr;
         std::deque<std::function<void()>> handler;
