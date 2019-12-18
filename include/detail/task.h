@@ -3,6 +3,7 @@
 #include <deque>
 #include <chrono>
 
+#include "global.h"
 #include "thread_local.h"
 #include "executable.h"
 
@@ -34,7 +35,7 @@ namespace task_executor
             switch (action)
             {
             case action_t::POST:
-                post(executor);
+                post();
                 break;
             case action_t::DEFER:
                 defer(executor);
@@ -46,12 +47,14 @@ namespace task_executor
         }
 
     protected:
-        template<class Executor>
-        void post(Executor& executor)
+        void post()
         {
-            // post = graph pop -> global deque push back
+            executor_base_t* tmp = thread_local_t::currentExecutor;
+            thread_local_t::currentExecutor = nullptr;
 
-            //executor.assign(this);
+            defer(getSystemExecutor());
+
+            thread_local_t::currentExecutor = tmp;
         }
 
         template<class Executor>

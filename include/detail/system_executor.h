@@ -4,6 +4,7 @@
 
 #include "crt_struct.h"
 #include "executor.h"
+#include "global.h"
 
 namespace task_executor
 {
@@ -21,4 +22,9 @@ namespace task_executor
             return systemExecutor;
         }
     };
+
+    system_executor_t& getSystemExecutor()
+    {
+        return system_executor_t::get();
+    }
 }
