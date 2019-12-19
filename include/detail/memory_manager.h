@@ -124,6 +124,7 @@ namespace task_executor
             return *ptr;
         }
 
+    private:
         T* ptr;
         std::function<void(void*)> deleter;
     };

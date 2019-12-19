@@ -90,12 +90,14 @@ namespace task_executor
 
         void executeTask(task_t* task)
         {
+            thread_local_t::haveExecuteTask = true;
+
             task->executee();
             task->notifier();
         }
 
     private:
-        static constexpr size_t SIZE_DEQUE = 100;
+        static constexpr size_t SIZE_DEQUE = (1 << 20);
 
         crt_fixed_deque<task_t, SIZE_DEQUE> taskDeq;
         std::atomic_bool isFlushing = false;

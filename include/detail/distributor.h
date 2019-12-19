@@ -4,115 +4,103 @@
 #include <tuple>
 #include <chrono>
 
-#include "task_container.h"
+#include "constant.h"
+#include "global.h"
+#include "context.h"
 
 namespace task_executor
 {
-    namespace detail
-    {
-        void timed_loop();
-    }
-
-    template<
-        class TaskDeque = task_deque,
-        class TimedTaskMap = timed_task_map,
-        template<class> class ListDeque = crt_list_deque
-    >
     struct distributor_t
     {
-        void assignImmediate(TaskDeque* immediate)
+        static distributor_t& get()
         {
-            immediates.pushBack(immediate);
-        }
-
-        void assignShortTerm(TimedTaskMap* shortTerm, std::size_t idxSlot)
-        {
-            cntTotalTimedTask += 1;
-
-            shortTerms[idxSlot].pushBack(shortTerm);
-        }
-
-        void assignLongTerm(TimedTaskMap* longTerm, std::size_t idxSlot)
-        {
-            cntTotalTimedTask += 1;
-
-            longTerms[idxSlot].pushBack(longTerm);
-        }
-
-        TaskDeque* takeImmediate()
-        {
-            return immediates.isEmpty() ? nullptr : immediates.popFront();
-        }
-
-        void updateShortTerm()
-        {
-            for (auto& deq : shortTerms)
-                updateShortTerm(deq);
-        }
-
-        void updateLongTerm()
-        {
-            updateLongTerm(longTerms[idxUpdateLongTerm++]);
-            idxUpdateLongTerm %= cntTimeSlot;
-        }
-
-        std::size_t getCntTotalTimedTask() const
-        {
-            return cntTotalTimedTask;
-        }
-
-    private:
-		void updateShortTerm(ListDeque<TimedTaskMap*>& deq)
-		{
-
-		}
-
-		void updateLongTerm(ListDeque<TimedTaskMap*>& deq)
-		{
-
-		}
-
-        ListDeque<TaskDeque*> immediates;
-        std::array<ListDeque<TimedTaskMap*>, cntTimeSlot> shortTerms;
-        std::array<ListDeque<TimedTaskMap*>, cntTimeSlot> longTerms;
-        std::size_t idxUpdateLongTerm = 0;
-        std::size_t cntTotalTimedTask = 0;
-    };
-
-    namespace detail
-    {
-        distributor_t<>* getDistributor()
-        {
-            static distributor_t<>* distributor = new distributor_t<>;
+            static distributor_t distributor;
 
             return distributor;
         }
 
-        void timed_loop()
+        void enterTimedLoop()
         {
-            static std::atomic_bool hasOwner = false;
-
-            for (;;)
-            {
-                bool oldHasOwner = hasOwner.load();
-
-                if (oldHasOwner)
-                    return;
-
-                if (hasOwner.compare_exchange_weak(oldHasOwner, true))
-                    break;
-            }
-
-            auto distributor = getDistributor();
-
-            for (;distributor->getCntTotalTimedTask() != 0;
-                std::this_thread::sleep_for(sizeTimeSlot))
-            {
-                distributor->updateShortTerm();
-                distributor->updateLongTerm();
-            }
-
-            // post to system_executor
+            while (tryTimedLoop());
         }
+
+        bool tryTimedLoop()
+        {
+            distributor_t& distributor = get();
+
+            bool oldHasOwner = distributor.hasOwner.load();
+            if (oldHasOwner ||
+                !distributor.hasOwner.compare_exchange_weak(
+                    oldHasOwner, true))
+                return false;
+
+            distributor.updateShortTerm();
+            distributor.updateLongTerm();
+        }
+
+        void assignContext(xmanaged_ptr<context_t>&& context)
+        {
+
+        }
+
+        void flushImmediate(
+            std::chrono::steady_clock::duration& limitExecutionTime)
+        {
+            std::chrono::steady_clock::duration totalExecutionTime{ 0 };
+            while (limitExecutionTime > totalExecutionTime)
+            {
+                thread_local_t::haveExecuteTask = false;
+
+                std::chrono::steady_clock::time_point start =
+                    std::chrono::steady_clock::now();
+
+                xmanaged_ptr<context_t>* context = immediates.popFront();
+                if (context == nullptr)
+                    break;
+
+                (*context)->release();
+
+                std::chrono::steady_clock::time_point end =
+                    std::chrono::steady_clock::now();
+
+                if (thread_local_t::haveExecuteTask)
+                    totalExecutionTime += (end - start);
+            }
+
+            limitExecutionTime -=
+                std::min(limitExecutionTime, totalExecutionTime);
+        }
+
+    private:
+        static constexpr size_t SIZE_DEQUE = (1 << 20);
+
+        inline static std::atomic_bool hasOwner = false;
+
+        crt_fixed_deque<xmanaged_ptr<context_t>, SIZE_DEQUE> immediates;
+
+        void assignImmediate()
+        {
+        }
+
+        void assignShortTerm()
+        {
+        }
+
+        void assignLongTerm()
+        {
+        }
+
+        void updateShortTerm()
+        {
+        }
+
+        void updateLongTerm()
+        {
+        }
+    };
+
+    distributor_t& getDistributor()
+    {
+        return distributor_t::get();
     }
 }

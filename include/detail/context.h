@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+
 #include "context_creator.h"
 #include "executor.h"
 #include "memory_manager.h"
@@ -13,9 +15,16 @@ namespace task_executor
         context_t(Func&& func, action_t _action, executor_t* _executor) :
             executable{ make_xmanaged(executable_t{ std::function{ func } }) },
             action{ _action },
+            timePoint{
+            std::chrono::steady_clock::time_point::time_since_epoch() },
             executor{ _executor }
         {
-            task.executee = [this]() { (*executable)(); };
+            task.executee = [this]()
+            {
+                std::this_thread::sleep_until(timePoint);
+
+                (*executable)();
+            };
             task.notifier = [this]() { notifyComplete(); };
         }
 
@@ -55,10 +64,16 @@ namespace task_executor
                 f();
         }
 
+        const std::chrono::steady_clock::time_point getTimePoint()
+        {
+            return timePoint;
+        }
+
     protected:
         xmanaged_ptr<executable_base_t> executable;
         task_t task;
         action_t action;
+        std::chrono::steady_clock::time_point timePoint;
         executor_t* executor = nullptr;
         std::deque<std::function<void()>> handler;
     };
