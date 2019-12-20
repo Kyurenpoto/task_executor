@@ -127,6 +127,9 @@ namespace task_executor
     private:
         T* ptr;
         std::function<void(void*)> deleter;
+
+        template<class U>
+        friend struct xmanaged_ptr;
     };
 
     memory_manager_t& getMemoryManager()

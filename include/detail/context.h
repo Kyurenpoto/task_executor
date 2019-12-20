@@ -16,7 +16,7 @@ namespace task_executor
             executable{ make_xmanaged(executable_t{ std::function{ func } }) },
             action{ _action },
             timePoint{
-            std::chrono::steady_clock::time_point::time_since_epoch() },
+            std::chrono::steady_clock::time_point{}.time_since_epoch() },
             executor{ _executor }
         {
             task.executee = [this]()
@@ -64,7 +64,7 @@ namespace task_executor
                 f();
         }
 
-        const std::chrono::steady_clock::time_point getTimePoint()
+        const std::chrono::steady_clock::time_point getTimePoint() const noexcept
         {
             return timePoint;
         }

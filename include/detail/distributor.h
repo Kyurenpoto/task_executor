@@ -1,10 +1,8 @@
 #pragma once
 
 #include <array>
-#include <tuple>
-#include <chrono>
+#include <set>
 
-#include "constant.h"
 #include "global.h"
 #include "context.h"
 
@@ -38,56 +36,79 @@ namespace task_executor
             distributor.updateLongTerm();
         }
 
-        void assignContext(xmanaged_ptr<context_t>&& context)
+        void assignContext(xmanaged_ptr<context_t>& context)
         {
+            auto duration = durationContext(context);
 
+            if (duration < SIZE_TIME_SLOT)
+                immediates.pushBack(&context);
+            else if (duration > SIZE_TOTAL_TIME_SLOT)
+                longTerms.pushBack(&context);
+            else
+                shortTerms.pushBack(&context);
         }
 
         void flushImmediate(
             std::chrono::steady_clock::duration& limitExecutionTime)
         {
             std::chrono::steady_clock::duration totalExecutionTime{ 0 };
-            while (limitExecutionTime > totalExecutionTime)
-            {
-                thread_local_t::haveExecuteTask = false;
+            loopContextDeque(immediates,
+                [&, this](xmanaged_ptr<context_t>* context)
+                {
+                    thread_local_t::haveExecuteTask = false;
 
-                std::chrono::steady_clock::time_point start =
-                    std::chrono::steady_clock::now();
+                    std::chrono::steady_clock::time_point start =
+                        std::chrono::steady_clock::now();
 
-                xmanaged_ptr<context_t>* context = immediates.popFront();
-                if (context == nullptr)
-                    break;
+                    (*context)->release();
 
-                (*context)->release();
+                    std::chrono::steady_clock::time_point end =
+                        std::chrono::steady_clock::now();
 
-                std::chrono::steady_clock::time_point end =
-                    std::chrono::steady_clock::now();
+                    if (thread_local_t::haveExecuteTask)
+                        totalExecutionTime += (end - start);
 
-                if (thread_local_t::haveExecuteTask)
-                    totalExecutionTime += (end - start);
-            }
+                    return limitExecutionTime > totalExecutionTime;
+                });
 
             limitExecutionTime -=
                 std::min(limitExecutionTime, totalExecutionTime);
         }
 
     private:
+        struct compare_context
+        {
+            bool operator() (const xmanaged_ptr<context_t>* lhs,
+                const xmanaged_ptr<context_t>* rhs) const
+            {
+                return (*lhs)->getTimePoint() < (*rhs)->getTimePoint();
+            }
+        };
+
         static constexpr size_t SIZE_DEQUE = (1 << 20);
+        static constexpr std::size_t CNT_TIME_SLOT = 100;
+        static constexpr std::chrono::steady_clock::duration
+            SIZE_TIME_SLOT = std::chrono::milliseconds{ 20 };
+        static constexpr std::chrono::steady_clock::duration
+            SIZE_TOTAL_TIME_SLOT = SIZE_TIME_SLOT * CNT_TIME_SLOT;
 
         inline static std::atomic_bool hasOwner = false;
 
-        crt_fixed_deque<xmanaged_ptr<context_t>, SIZE_DEQUE> immediates;
+        using context_deque =
+            crt_fixed_deque<xmanaged_ptr<context_t>, SIZE_DEQUE>;
 
-        void assignImmediate()
-        {
-        }
+        context_deque immediates, shortTerms, longTerms;
 
-        void assignShortTerm()
-        {
-        }
+        using context_set =
+            std::pmr::set<xmanaged_ptr<context_t>*, compare_context>;
 
-        void assignLongTerm()
+        std::array<context_set, CNT_TIME_SLOT> shortTermsSorted;
+        context_set longTermsSorted;
+
+        std::chrono::steady_clock::duration durationContext(
+            xmanaged_ptr<context_t>& context)
         {
+            return context->getTimePoint() - std::chrono::steady_clock::now();
         }
 
         void updateShortTerm()
@@ -96,6 +117,23 @@ namespace task_executor
 
         void updateLongTerm()
         {
+            loopContextDeque(longTerms,
+                [this](xmanaged_ptr<context_t>* context)
+                { longTermsSorted.insert(context); return true; });
+
+            if (longTermsSorted.empty() ||
+                durationContext((**longTermsSorted.begin())) >
+                SIZE_TOTAL_TIME_SLOT)
+                return;
+        }
+
+        template<class Func>
+        void loopContextDeque(context_deque& deque, Func&& func)
+        {
+            for (auto context = deque.popFront(); context != nullptr;
+                context = deque.popFront())
+                if (!func(context))
+                    break;
         }
     };
 
