@@ -11,12 +11,13 @@ TEST_CASE("execute_context")
     {
         thread_local_t::currentExecutor = nullptr;
 
-        strand_executor_t e;
+        std::shared_ptr<strand_executor_t> e =
+            std::make_shared<strand_executor_t>();
         
         bool flag1 = false, flag2 = false;
         context_t
-            a{ std::function{[&flag1]()->void { flag1 = true; }}, action_t::DISPATCH, &e },
-            b{ std::function{[&flag2]()->void { flag2 = true; }}, action_t::DISPATCH, &e };
+            a{ std::function{[&flag1]()->void { flag1 = true; }}, action_t::DISPATCH, &(*e) },
+            b{ std::function{[&flag2]()->void { flag2 = true; }}, action_t::DISPATCH, &(*e) };
 
         a.addPostrior(&b);
 
@@ -34,12 +35,13 @@ TEST_CASE("execute_context")
     {
         thread_local_t::currentExecutor = nullptr;
 
-        strand_executor_t e;
+        std::shared_ptr<strand_executor_t> e =
+            std::make_shared<strand_executor_t>();
 
         bool flag1 = false, flag2 = false;
         context_t
-            a{ std::function{[&flag1]()->void { flag1 = true; }}, action_t::DISPATCH, &e },
-            b{ std::function{[&flag2]()->void { flag2 = true; }}, action_t::DISPATCH, &e };
+            a{ std::function{[&flag1]()->void { flag1 = true; }}, action_t::DISPATCH, &(*e) },
+            b{ std::function{[&flag2]()->void { flag2 = true; }}, action_t::DISPATCH, &(*e) };
 
         a.addPostrior(&b);
 

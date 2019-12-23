@@ -42,7 +42,8 @@ TEST_CASE("strand_executor")
 
     SUBCASE("convert_dispatch_to_defer")
     {
-        test_strand_convert s;
+        std::shared_ptr<test_strand_convert> s =
+            std::make_shared<test_strand_convert>();
 
         task_t t;
         t.isReleased.store(true);
@@ -50,17 +51,18 @@ TEST_CASE("strand_executor")
         t.executee = []() {};
         t.notifier = []() {};
 
-        t.act(s, action_t::DISPATCH);
+        t.act(*s, action_t::DISPATCH);
 
-        REQUIRE(s.callAssignBack.load() == true);
+        REQUIRE(s->callAssignBack.load() == true);
     }
 
     SUBCASE("no_stealing")
     {
-        test_strand_no_steal s;
+        std::shared_ptr<test_strand_no_steal> s =
+            std::make_shared<test_strand_no_steal>();
         auto f = [&s]() {
             for (int i = 0; i < 100'000; ++i)
-                s.flush();
+                s->flush();
         };
 
         std::thread t1{ f };
@@ -81,6 +83,6 @@ TEST_CASE("strand_executor")
         t7.join();
         t8.join();
 
-        REQUIRE(s.hasEverStolen.load() == false);
+        REQUIRE(s->hasEverStolen.load() == false);
     }
 }

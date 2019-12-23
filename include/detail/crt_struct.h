@@ -31,36 +31,6 @@ namespace task_executor
         std::atomic<atomic_status> status = atomic_status::NORMAL;
     };
 
-    template<class T>
-    struct lock_free_list
-    {
-        struct node
-        {
-            std::atomic<node*> next = nullptr;
-            std::atomic<node*> prev = nullptr;
-        };
-
-        void pushBack(T data)
-        {
-            
-        }
-
-        void pushFront(T data)
-        {
-
-        }
-
-        std::optional<T> popBack()
-        {
-            return std::nullopt;
-        }
-
-        std::optional<T> popFront()
-        {
-            return std::nullopt;
-        }
-    };
-
     template<class T, size_t N>
     struct lock_free_fixed_deque
     {
@@ -161,56 +131,8 @@ namespace task_executor
         }
     };
 
-    template<class T>
-    using crt_list = lock_free_list<T>;
-
     template<class T, size_t N>
     using crt_fixed_deque = lock_free_fixed_deque<T, N>;
-
-    template<class T>
-    struct lock_free_list_deque
-    {
-        template<class U>
-        void pushBack(U && data)
-        {
-        }
-
-        template<class U> 
-        void pushFront(U && data)
-        {
-        }
-
-        std::optional<T> popBack()
-        {
-            return std::nullopt;
-        }
-
-        std::optional<T> popFront()
-        {
-            return std::nullopt;
-        }
-    };
-
-    template<class T>
-    using crt_list_deque = lock_free_list_deque<T>;
-
-    template<class T>
-    struct lock_free_set
-    {
-
-    };
-
-    template<class T>
-    using crt_set = lock_free_set<T>;
-
-    template<class Key, class T>
-    struct lock_free_map
-    {
-
-    };
-
-    template<class Key, class T>
-    using crt_map = lock_free_map<Key, T>;
 
     template<size_t N>
     struct crt_bitset
