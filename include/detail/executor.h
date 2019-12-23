@@ -97,7 +97,7 @@ namespace task_executor
         }
 
     private:
-        static constexpr size_t SIZE_DEQUE = (1 << 20);
+        static constexpr size_t SIZE_DEQUE = (1 << 14);
 
         crt_fixed_deque<task_t, SIZE_DEQUE> taskDeq;
         std::atomic_bool isFlushing = false;

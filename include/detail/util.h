@@ -28,12 +28,13 @@ namespace task_executor
             return false;
     }
 
-    std::chrono::steady_clock::time_point getEpoch()
+    using time_point_t = std::chrono::steady_clock::time_point;
+    using duration_t = std::chrono::steady_clock::duration;
+
+    time_point_t getEpoch()
     {
-        std::chrono::steady_clock::time_point now =
-            std::chrono::steady_clock::now();
-        std::chrono::steady_clock::duration duration =
-            now.time_since_epoch();
+        time_point_t now = std::chrono::steady_clock::now();
+        duration_t duration = now.time_since_epoch();
 
         return now - std::chrono::duration_cast<
             std::chrono::nanoseconds>(duration);

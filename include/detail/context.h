@@ -13,7 +13,7 @@ namespace task_executor
         context_t(Func&& func,
             action_t _action,
             executor_t* _executor,
-            std::chrono::steady_clock::time_point _timePoint = getEpoch()) :
+            time_point_t _timePoint = getEpoch()) :
             executable{ make_xmanaged(executable_t{ std::function{ func } }) },
             action{ _action },
             timePoint{ _timePoint },
@@ -73,7 +73,7 @@ namespace task_executor
         xmanaged_ptr<executable_base_t> executable;
         task_t task;
         action_t action;
-        std::chrono::steady_clock::time_point timePoint;
+        time_point_t timePoint;
         executor_t* executor = nullptr;
         std::deque<std::function<void()>> handler;
     };
