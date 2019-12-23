@@ -19,26 +19,9 @@ namespace task_executor
 
         static void enterTimedLoop()
         {
-            while (tryTimedLoop());
-        }
-
-        static bool tryTimedLoop()
-        {
             distributor_t& distributor = get();
 
-            bool oldHasOwner = distributor.hasOwner.load();
-            if (oldHasOwner ||
-                !distributor.hasOwner.compare_exchange_weak(
-                    oldHasOwner, true))
-                return false;
-
-            std::chrono::steady_clock::time_point now =
-                std::chrono::steady_clock::now();
-
-            distributor.updateShortTerm();
-            distributor.updateLongTerm();
-
-            std::this_thread::sleep_until(now + SIZE_TIME_SLOT);
+            while (distributor.tryTimedLoop());
         }
 
         static void assignContext(xmanaged_ptr<context_t>& context)
@@ -159,6 +142,23 @@ namespace task_executor
         context_set longTermsSorted;
 
         distributor_t() = default;
+
+        bool tryTimedLoop()
+        {
+            distributor_t& distributor = get();
+
+            bool oldHasOwner = hasOwner.load();
+            if (oldHasOwner ||
+                !hasOwner.compare_exchange_weak(oldHasOwner, true))
+                return false;
+
+            time_point_t now = std::chrono::steady_clock::now();
+
+            updateShortTerm();
+            updateLongTerm();
+
+            std::this_thread::sleep_until(now + SIZE_TIME_SLOT);
+        }
 
         void updateShortTerm()
         {
