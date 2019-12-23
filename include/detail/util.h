@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <chrono>
 
 namespace task_executor
 {
@@ -25,5 +26,16 @@ namespace task_executor
             return a == static_cast<A*>(b);
         else
             return false;
+    }
+
+    std::chrono::steady_clock::time_point getEpoch()
+    {
+        std::chrono::steady_clock::time_point now =
+            std::chrono::steady_clock::now();
+        std::chrono::steady_clock::duration duration =
+            now.time_since_epoch();
+
+        return now - std::chrono::duration_cast<
+            std::chrono::nanoseconds>(duration);
     }
 }
