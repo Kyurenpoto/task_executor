@@ -15,8 +15,8 @@ Inspired by https://github.com/chriskohlhoff/executors
     * [x] Achieving 100% 'executor' test coverage
 5. [x] Implementing 'context'
     * [x] Achieving 100% 'context' test coverage
-6. [ ] Implementing 'distributor'
-    * [ ] Achieving 100% 'distributor' test coverage
+6. [x] Implementing 'distributor'
+    * [x] Achieving 100% 'distributor' test coverage
 7. [ ] Implementing 'thread manager'
     * [ ] Achieving 100% 'thread manager' test coverage
 8. [ ] Implementing User API

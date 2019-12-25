@@ -17,11 +17,14 @@ namespace task_executor
             return distributor;
         }
 
-        static void enterTimedLoop()
+        static void enterTimedLoop(bool test = false)
         {
             distributor_t& distributor = get();
 
-            while (distributor.tryTimedLoop());
+            if (test)
+                distributor.tryTimedLoop();
+            else
+                while (distributor.tryTimedLoop());
         }
 
         static void assignContext(xmanaged_ptr<context_t>& context)
@@ -145,8 +148,6 @@ namespace task_executor
 
         bool tryTimedLoop()
         {
-            distributor_t& distributor = get();
-
             bool oldHasOwner = hasOwner.load();
             if (oldHasOwner ||
                 !hasOwner.compare_exchange_weak(oldHasOwner, true))
@@ -158,6 +159,10 @@ namespace task_executor
             updateLongTerm();
 
             std::this_thread::sleep_until(now + SIZE_TIME_SLOT);
+
+            hasOwner.store(false);
+
+            return true;
         }
 
         void updateShortTerm()

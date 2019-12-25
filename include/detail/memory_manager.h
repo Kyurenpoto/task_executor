@@ -30,7 +30,7 @@ namespace task_executor
         }
 
         template<class T>
-        T* xnew(T arg)
+        T* xnew(T&& arg)
         {
             T* ptr = static_cast<T*>(resource.allocate(sizeof(T), alignof(T)));
 
