@@ -57,7 +57,7 @@ TEST_CASE("execute_task")
 
     SUBCASE("1_executor_2_linked_task_dispatch")
     {
-        thread_local_t::currentExecutor = nullptr;
+        getThreadLocal().currentExecutor = nullptr;
 
         tmp_task a, b;
         a.isReleased.store(true);
@@ -82,7 +82,7 @@ TEST_CASE("execute_task")
 
     SUBCASE("2_executor_separate_2_linked_task_dispatch")
     {
-        thread_local_t::currentExecutor = nullptr;
+        getThreadLocal().currentExecutor = nullptr;
 
         tmp_task a, b;
         a.isReleased.store(true);
@@ -107,7 +107,7 @@ TEST_CASE("execute_task")
 
     SUBCASE("1_executor_act_in_task_dispatch")
     {
-        thread_local_t::currentExecutor = nullptr;
+        getThreadLocal().currentExecutor = nullptr;
 
         tmp_task a, b;
         a.isReleased.store(true);
@@ -131,7 +131,7 @@ TEST_CASE("execute_task")
 
     SUBCASE("2_executor_act_in_task_with_exception_dispatch")
     {
-        thread_local_t::currentExecutor = nullptr;
+        getThreadLocal().currentExecutor = nullptr;
 
         tmp_task a, b;
         a.isReleased.store(true);
@@ -150,7 +150,7 @@ TEST_CASE("execute_task")
 
     SUBCASE("2_executor_act_in_task_dispatch_defer")
     {
-        thread_local_t::currentExecutor = nullptr;
+        getThreadLocal().currentExecutor = nullptr;
 
         tmp_task a, b;
         a.isReleased.store(true);
@@ -261,7 +261,7 @@ TEST_CASE("execute_task_with_multi_thread")
         tmp_executor_lock_free e;
 
         std::thread t1{ [&e, &flag1, &flag2]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             while (!flag1.load() || !flag2.load())
                 e.flush();
@@ -270,7 +270,7 @@ TEST_CASE("execute_task_with_multi_thread")
         std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
 
         std::thread t2{ [&e, &a, &b](){
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             a.act(e, action_t::DISPATCH);
 
@@ -310,7 +310,7 @@ TEST_CASE("execute_task_with_multi_thread")
         tmp_executor_lock_free e;
 
         std::thread t1{ [&e, &flag1, &flag2, &flag3, &flag4]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             while (!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load())
                 e.flush();
@@ -319,7 +319,7 @@ TEST_CASE("execute_task_with_multi_thread")
         std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
 
         std::thread t2{ [&e, &a, &b]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             a.act(e, action_t::DISPATCH);
 
@@ -328,7 +328,7 @@ TEST_CASE("execute_task_with_multi_thread")
         } };
 
         std::thread t3{ [&e, &c, &d]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             c.act(e, action_t::DISPATCH);
 
@@ -371,7 +371,7 @@ TEST_CASE("execute_task_with_multi_thread")
         tmp_executor_lock_free e;
 
         std::thread t1{ [&e, &flag1, &flag2, &flag3, &flag4]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             while (!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load())
                 e.flush();
@@ -380,7 +380,7 @@ TEST_CASE("execute_task_with_multi_thread")
         std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
 
         std::thread t2{ [&e, &a, &d]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             a.act(e, action_t::DISPATCH);
 
@@ -389,7 +389,7 @@ TEST_CASE("execute_task_with_multi_thread")
         } };
 
         std::thread t3{ [&e, &c, &b]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             c.act(e, action_t::DISPATCH);
 
@@ -432,7 +432,7 @@ TEST_CASE("execute_task_with_multi_thread")
         tmp_executor_lock_free e;
 
         std::thread t1{ [&e, &flag1, &flag2, &flag3, &flag4]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             while (!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load())
                 e.flush();
@@ -441,7 +441,7 @@ TEST_CASE("execute_task_with_multi_thread")
         std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
 
         std::thread t2{ [&e, &a, &c]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             a.act(e, action_t::DISPATCH);
 
@@ -449,7 +449,7 @@ TEST_CASE("execute_task_with_multi_thread")
         } };
 
         std::thread t3{ [&e, &b, &d]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             while (b.cntPrior.load() != 0);
             b.act(e, action_t::DISPATCH);
@@ -490,7 +490,7 @@ TEST_CASE("execute_task_with_multi_thread")
         d.executee = [&v]() { v(); };
 
         std::thread t1{ [&e, &flag1, &flag2]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             while (!flag1.load() || !flag2.load())
                 e.flush();
@@ -499,7 +499,7 @@ TEST_CASE("execute_task_with_multi_thread")
         std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
 
         std::thread t2{ [&e, &a, &b]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             a.act(e, action_t::DISPATCH);
 
@@ -507,7 +507,7 @@ TEST_CASE("execute_task_with_multi_thread")
         } };
 
         std::thread t3{ [&e, &c, &d]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             c.act(e, action_t::DISPATCH);
 
@@ -539,7 +539,7 @@ TEST_CASE("execute_task_with_multi_thread")
         tmp_executor_lock_free e1, e2;
 
         std::thread t1{ [&e1, &e2, &flag1, &flag2]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             while (!flag1.load() || !flag2.load())
             {
@@ -551,13 +551,13 @@ TEST_CASE("execute_task_with_multi_thread")
         std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
 
         std::thread t2{ [&e1, &a]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             a.act(e1, action_t::DISPATCH);
         } };
 
         std::thread t3{ [&e2, &b]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             while (b.cntPrior.load() != 0);
             b.act(e2, action_t::DISPATCH);
@@ -597,7 +597,7 @@ TEST_CASE("execute_task_with_multi_thread")
         d.executee = [&v]() { v(); };
 
         std::thread t1{ [&e1, &e2, &flag1, &flag2, &flag3, &flag4]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             while (!flag1.load() || !flag2.load() || !flag3.load() || !flag4.load())
             {
@@ -609,7 +609,7 @@ TEST_CASE("execute_task_with_multi_thread")
         std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
 
         std::thread t2{ [&e1, &a, &d]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             a.act(e1, action_t::DISPATCH);
 
@@ -618,7 +618,7 @@ TEST_CASE("execute_task_with_multi_thread")
         } };
 
         std::thread t3{ [&e2, &c, &b]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             c.act(e2, action_t::DISPATCH);
 
@@ -658,7 +658,7 @@ TEST_CASE("execute_task_with_multi_thread")
         d.executee = [&v]() { v(); };
 
         std::thread t1{ [&e1, &e2, &flag1, &flag2]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             while (!flag1.load() || !flag2.load())
             {
@@ -670,7 +670,7 @@ TEST_CASE("execute_task_with_multi_thread")
         std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
 
         std::thread t2{ [&e1, &a, &b]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             a.act(e1, action_t::DISPATCH);
 
@@ -678,7 +678,7 @@ TEST_CASE("execute_task_with_multi_thread")
         } };
 
         std::thread t3{ [&e2, &c, &d]() {
-            thread_local_t::currentExecutor = nullptr;
+            getThreadLocal().currentExecutor = nullptr;
 
             c.act(e2, action_t::DISPATCH);
 

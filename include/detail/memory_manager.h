@@ -9,17 +9,7 @@ namespace task_executor
     struct memory_pool_t
     {
         memory_pool_t* next = nullptr;
-        std::atomic_bool isActive = false;
-
-        void restore()
-        {
-            bool oldIsActive;
-            do
-            {
-                oldIsActive = isActive.load();
-            } while (oldIsActive &&
-                isActive.compare_exchange_weak(oldIsActive, false));
-        }
+        std::atomic_bool isActive = true;
 
         template<class T, class... Args>
         T* xnew(Args&&... args)

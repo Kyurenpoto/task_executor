@@ -9,7 +9,7 @@ TEST_CASE("execute_context")
 
     SUBCASE("release_after_notify")
     {
-        thread_local_t::currentExecutor = nullptr;
+        getThreadLocal().currentExecutor = nullptr;
 
         std::shared_ptr<strand_executor_t> e =
             std::make_shared<strand_executor_t>();
@@ -33,7 +33,7 @@ TEST_CASE("execute_context")
 
     SUBCASE("notify_after_release")
     {
-        thread_local_t::currentExecutor = nullptr;
+        getThreadLocal().currentExecutor = nullptr;
 
         std::shared_ptr<strand_executor_t> e =
             std::make_shared<strand_executor_t>();

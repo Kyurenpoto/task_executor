@@ -9,7 +9,7 @@ TEST_CASE("execute_distributor")
 
     SUBCASE("immediate_context")
     {
-        thread_local_t::currentExecutor = nullptr;
+        getThreadLocal().currentExecutor = nullptr;
 
         std::shared_ptr<strand_executor_t> e =
             std::make_shared<strand_executor_t>();
@@ -28,7 +28,7 @@ TEST_CASE("execute_distributor")
 
     SUBCASE("timed_context_short")
     {
-        thread_local_t::currentExecutor = nullptr;
+        getThreadLocal().currentExecutor = nullptr;
 
         std::shared_ptr<strand_executor_t> e =
             std::make_shared<strand_executor_t>();
@@ -56,7 +56,7 @@ TEST_CASE("execute_distributor")
 
     SUBCASE("timed_context_long")
     {
-        thread_local_t::currentExecutor = nullptr;
+        getThreadLocal().currentExecutor = nullptr;
 
         std::shared_ptr<strand_executor_t> e =
             std::make_shared<strand_executor_t>();

@@ -86,11 +86,13 @@ namespace task_executor
 
             bool operator()(xmanaged_ptr<context_t>* context)
             {
-                thread_local_t::haveExecuteTask = false;
+                thread_local_t& tls = getThreadLocal();
+
+                tls.haveExecuteTask = false;
 
                 duration_t executionTime = getExecutionTime(context);
 
-                if (thread_local_t::haveExecuteTask)
+                if (tls.haveExecuteTask)
                     totalExecutionTime += executionTime;
 
                 return limitExecutionTime > totalExecutionTime;

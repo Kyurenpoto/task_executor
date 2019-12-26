@@ -49,12 +49,13 @@ namespace task_executor
     protected:
         void post()
         {
-            executor_base_t* tmp = thread_local_t::currentExecutor;
-            thread_local_t::currentExecutor = nullptr;
+            thread_local_t& tls = getThreadLocal();
+            executor_base_t* tmp = tls.currentExecutor;
+            tls.currentExecutor = nullptr;
 
             defer(getSystemExecutor());
 
-            thread_local_t::currentExecutor = tmp;
+            tls.currentExecutor = tmp;
         }
 
         template<class Executor>
@@ -62,25 +63,26 @@ namespace task_executor
         {
             executor.assign_back(this);
 
-            if (isSameObj(thread_local_t::currentExecutor, &executor))
+            if (isSameObj(getThreadLocal().currentExecutor, &executor))
                 executor.flush();
         }
 
         template<class Executor>
         void dispatch(Executor& executor)
         {
-            if (thread_local_t::currentExecutor != nullptr &&
-                !isSameObj(thread_local_t::currentExecutor, &executor))
+            thread_local_t& tls = getThreadLocal();
+            if (tls.currentExecutor != nullptr &&
+                !isSameObj(tls.currentExecutor, &executor))
                 throw std::logic_error{ "External dispatch operations are"
                 " only allowed from the system executor" };
 
-            executor_base_t* tmp = thread_local_t::currentExecutor;
-            thread_local_t::currentExecutor = &executor;
+            executor_base_t* tmp = tls.currentExecutor;
+            tls.currentExecutor = &executor;
 
             executor.assign_front(this);
             executor.flush();
 
-            thread_local_t::currentExecutor = tmp;
+            tls.currentExecutor = tmp;
         }
     };
 }

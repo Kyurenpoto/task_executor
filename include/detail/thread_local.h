@@ -3,18 +3,30 @@
 #include <memory_resource>
 #include <chrono>
 
+#include "global.h"
+#include "memory_manager.h"
+
 namespace task_executor
 {
-    struct executor_base_t;
-
     struct thread_local_t
     {
-        static thread_local
-            std::pmr::unsynchronized_pool_resource resource;
-        inline static thread_local
-            executor_base_t* currentExecutor = nullptr;
-        static thread_local
-            std::chrono::steady_clock::duration limitExecutionTime;
-        inline static thread_local bool haveExecuteTask = false;
+        executor_base_t* currentExecutor = nullptr;
+        bool isOwner = false;
+        bool haveExecuteTask = false;
+
+        ~thread_local_t()
+        {
+            if (currentExecutor != nullptr && isOwner)
+                leaveOwner(currentExecutor);
+
+            getMemoryPool()->isActive.store(false);
+        }
     };
+
+    thread_local_t& getThreadLocal()
+    {
+        static thread_local thread_local_t tls;
+
+        return tls;
+    }
 }

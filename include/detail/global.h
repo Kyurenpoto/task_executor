@@ -9,4 +9,8 @@ namespace task_executor
     struct distributor_t;
 
     distributor_t& getDistributor();
+
+    struct executor_base_t;
+
+    void leaveOwner(executor_base_t* executor);
 }

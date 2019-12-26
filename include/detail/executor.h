@@ -13,7 +13,15 @@ namespace task_executor
 {
     // for task tests
     struct executor_base_t
-    {};
+    {
+        virtual void leaveOwner()
+        {}
+    };
+
+    void leaveOwner(executor_base_t* executor)
+    {
+        executor->leaveOwner();
+    }
 
     struct executor_t :
         executor_base_t, context_creator_t<executor_t>
@@ -21,6 +29,11 @@ namespace task_executor
         executor_t(const size_t maxRef) :
             remainRef{ maxRef }
         {}
+
+        void leaveOwner() override
+        {
+            isFlushing.store(false);
+        }
 
         template<class Context>
         void release(std::initializer_list<Context*> contexts)
@@ -71,6 +84,8 @@ namespace task_executor
 
         virtual void flushOwner()
         {
+            getThreadLocal().isOwner = true;
+
             while (true)
             {
                 task_t* task = taskDeq.popFront();
@@ -79,6 +94,8 @@ namespace task_executor
 
                 executeTask(task);
             }
+
+            getThreadLocal().isOwner = false;
         }
 
         virtual void flushStealer()
@@ -90,7 +107,7 @@ namespace task_executor
 
         void executeTask(task_t* task)
         {
-            thread_local_t::haveExecuteTask = true;
+            getThreadLocal().haveExecuteTask = true;
 
             task->executee();
             task->notifier();
