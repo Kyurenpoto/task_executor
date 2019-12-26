@@ -62,11 +62,18 @@ namespace task_executor
         {
             for (auto& f : handler)
                 f();
+
+            isCompleted.store(true);
         }
 
         const std::chrono::steady_clock::time_point getTimePoint() const noexcept
         {
             return timePoint;
+        }
+
+        const bool getIsCompleted() const noexcept
+        {
+            return isCompleted.load();
         }
 
     protected:
@@ -76,5 +83,6 @@ namespace task_executor
         time_point_t timePoint;
         executor_t* executor = nullptr;
         std::deque<std::function<void()>> handler;
+        std::atomic_bool isCompleted = false;
     };
 }

@@ -8,6 +8,7 @@
 
 namespace task_executor
 {
+    void flushContexts();
     void leaveContextPool();
 
     struct thread_local_t
@@ -16,12 +17,17 @@ namespace task_executor
         bool isOwner = false;
         bool haveExecuteTask = false;
 
+        thread_local_t()
+        {
+            flushContexts();
+        }
+
         ~thread_local_t()
         {
             if (currentExecutor != nullptr && isOwner)
                 leaveOwner(currentExecutor);
 
-            //leaveContextPool();
+            leaveContextPool();
             getMemoryPool()->leaveOwner();
         }
     };
