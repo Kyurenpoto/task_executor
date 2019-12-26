@@ -67,6 +67,7 @@ namespace task_executor
             do
             {
                 oldHead = head.load();
+                newHead->next = oldHead;
             } while (!head.compare_exchange_weak(oldHead, newHead));
 
             return newHead;
