@@ -8,6 +8,8 @@
 
 namespace task_executor
 {
+    void leaveContextPool();
+
     struct thread_local_t
     {
         executor_base_t* currentExecutor = nullptr;
@@ -19,7 +21,8 @@ namespace task_executor
             if (currentExecutor != nullptr && isOwner)
                 leaveOwner(currentExecutor);
 
-            getMemoryPool()->isActive.store(false);
+            //leaveContextPool();
+            getMemoryPool()->leaveOwner();
         }
     };
 

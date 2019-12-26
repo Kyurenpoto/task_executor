@@ -11,6 +11,11 @@ namespace task_executor
         memory_pool_t* next = nullptr;
         std::atomic_bool isActive = true;
 
+        void leaveOwner()
+        {
+            isActive.store(false);
+        }
+
         template<class T, class... Args>
         T* xnew(Args&&... args)
         {
@@ -53,18 +58,9 @@ namespace task_executor
 
         memory_pool_t* obtain()
         {
-            for (auto pool = head.load(); pool != nullptr; pool = pool->next)
-            {
-                bool oldIsActive;
-                do
-                {
-                    oldIsActive = pool->isActive.load();
-                } while (!oldIsActive &&
-                    !pool->isActive.compare_exchange_weak(oldIsActive, true));
-
-                if (!oldIsActive)
-                    return pool;
-            }
+            memory_pool_t* old = obtainOld();
+            if (old != nullptr)
+                return old;
 
             memory_pool_t* newHead = new memory_pool_t;
             memory_pool_t* oldHead;
@@ -78,11 +74,33 @@ namespace task_executor
 
     private:
         std::atomic<memory_pool_t*> head = nullptr;
+
+        memory_pool_t* obtainOld()
+        {
+            for (auto pool = head.load(); pool != nullptr; pool = pool->next)
+            {
+                bool oldIsActive;
+                do
+                {
+                    oldIsActive = pool->isActive.load();
+                } while (!oldIsActive &&
+                    !pool->isActive.compare_exchange_weak(oldIsActive, true));
+
+                if (!oldIsActive)
+                    return pool;
+            }
+
+            return nullptr;
+        }
     };
 
     template<class T>
     struct xmanaged_ptr
     {
+        xmanaged_ptr() = default;
+        xmanaged_ptr(const xmanaged_ptr&) = delete;
+        xmanaged_ptr& operator=(const xmanaged_ptr&) = delete;
+
         template<class Func>
         xmanaged_ptr(T* p, Func&& d) noexcept :
             ptr{ p },
@@ -98,6 +116,17 @@ namespace task_executor
             xmptr.deleter = {};
         }
 
+        template<class U>
+        xmanaged_ptr<T>& operator=(xmanaged_ptr<U>&& xmptr) noexcept
+        {
+            static_assert(std::is_convertible_v<T*, U*> || std::is_convertible_v<U*, T*>);
+
+            std::swap(ptr, xmptr.ptr);
+            std::swap(deleter, xmptr.deleter);
+
+            return *this;
+        }
+
         ~xmanaged_ptr()
         {
             if (deleter)
@@ -106,16 +135,16 @@ namespace task_executor
 
         T* operator->() const noexcept
         {
-            return ptr;
+            return static_cast<T*>(ptr);
         }
 
         std::add_lvalue_reference_t<T> operator*() const
         {
-            return *ptr;
+            return *static_cast<T*>(ptr);
         }
 
     private:
-        T* ptr;
+        void* ptr;
         std::function<void(void*)> deleter;
 
         template<class U>
