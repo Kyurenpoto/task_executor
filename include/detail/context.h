@@ -35,11 +35,25 @@ namespace task_executor
             context->handler.push_back([this]() { reflectPrior(); });
         }
 
+        void addPrior(context_t* context, transmit_func func)
+        {
+            addPrior(context);
+
+            context->executable->link(&(*executable), func);
+        }
+
         void addPostrior(context_t* context)
         {
             context->task.cntPrior.fetch_add(1);
 
             handler.push_back([context]() { context->reflectPrior(); });
+        }
+
+        void addPostrior(context_t* context, transmit_func func)
+        {
+            addPostrior(context);
+
+            executable->link(&(*(context->executable)), func);
         }
 
         void release()
@@ -74,6 +88,12 @@ namespace task_executor
         const bool getIsCompleted() const noexcept
         {
             return isCompleted.load();
+        }
+
+        template<class Ret, class... Args>
+        const executable_t<Ret, Args...> const & getExecutable()
+        {
+            return static_cast<executable_t<Ret, Args...>&>(*executable);
         }
 
     protected:
