@@ -14,7 +14,7 @@ namespace task_executor
 
 		std::atomic_bool isActive = true;
 		context_pool_t* next = nullptr;
-		memory_pool_t* memPool;
+		memory_pool_t* memPool = nullptr;
 
 		~context_pool_t()
 		{
@@ -32,7 +32,7 @@ namespace task_executor
 			isActive.store(false);
 		}
 
-		void assign(xmanaged_ptr<context_t>&& context)
+		xmanaged_ptr<context_t>& assign(xmanaged_ptr<context_t>&& context)
 		{
 			for (auto& x : contexts)
 				if (x.isAvailable)
@@ -40,10 +40,12 @@ namespace task_executor
 					x.isAvailable = false;
 					x.context = std::move(context);
 
-					return;
+					return x.context;
 				}
 
 			contexts.push_back(element{.context = std::move(context) });
+
+			return contexts.rbegin()->context;
 		}
 
 		void flush()
@@ -133,17 +135,13 @@ namespace task_executor
 	}
 
 	template<class Func>
-	static xmanaged_ptr<context_t>& createContext(Func&& func,
+	xmanaged_ptr<context_t>& createContext(Func&& func,
 		action_t action,
 		executor_t* executor,
 		time_point_t timePoint = getEpoch())
 	{
-
-		xmanaged_ptr<context_t> context =
-			make_xmanaged<context_t>(func, action, executor, timePoint);
-		getContextPool()->assign(context);
-
-		return context;
+		return getContextPool()->assign(
+			make_xmanaged<context_t>(func, action, executor, timePoint));
 	}
 
 	void flushContexts()

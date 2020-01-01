@@ -145,7 +145,7 @@ namespace task_executor
         }
 
     private:
-        void* ptr;
+        void* ptr = nullptr;
         std::function<void(void*)> deleter;
 
         template<class U>
