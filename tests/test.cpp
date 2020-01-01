@@ -52,7 +52,5 @@ TEST_CASE("test_func")
 #include "executable.cpp"
 #include "task.cpp"
 #include "strand_executor.cpp"
-#include "thread_pool_executor.cpp"
-#include "system_executor.cpp"
 #include "distributor.cpp"
 #include "context.cpp"

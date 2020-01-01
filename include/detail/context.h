@@ -90,12 +90,6 @@ namespace task_executor
             return isCompleted.load();
         }
 
-        template<class Ret, class... Args>
-        const executable_t<Ret, Args...> const & getExecutable()
-        {
-            return static_cast<executable_t<Ret, Args...>&>(*executable);
-        }
-
     protected:
         xmanaged_ptr<executable_base_t> executable;
         task_t task;
